@@ -1,6 +1,7 @@
 var api = require('./api');
 var geo = require('./geo');
 var utc = require('./utc');
+var messagequeue = require('./messagequeue');
 var lock = require('./lock');
 var state = require('./state');
 
@@ -10,8 +11,10 @@ var UUID_SEND_REALTIME = -1 ;
 
 var VAL_TYPE_STATE = 0 ;
 var VAL_TYPE_REALTIME = 1 ;
-var VAL_STATE_LOADED_GEOERROR = 1 ;
-var VAL_STATE_LOADED = 2 ;
+
+var VAL_STATE_LOADED_GEOERROR = 0 ;
+var VAL_STATE_LOADED = 1 ;
+var VAL_STATE_LOADING = 2 ;
 
 var TIMESTAMP = 0 ;
 var ERROR = null ;
@@ -20,6 +23,8 @@ var POLLRATE = 30000 ;
 var TIMEOUT = null;
 
 var LOCK = lock.create();
+
+var QUEUE = messagequeue.create();
 
 var DEFAULT_STATE = {
 	lat : null ,
@@ -33,6 +38,7 @@ var STATE = state.create(DEFAULT_STATE);
 var GEO = geo.create( function ( should_update ) {
 	STATE.data.lat = GEO.lat ;
 	STATE.data.lon = GEO.lon ;
+	STATE.freeze();
 	if ( should_update || TIMEOUT === null ) load( ) ;
 });
 
@@ -76,7 +82,7 @@ function load ( cb, quiet ) {
 		TIMEOUT = null ;
 	}
 	
-	send_state('LOADING');
+	send_state( VAL_STATE_LOADING );
 	
 	if ( STATE.data.lat === null || STATE.data.lon === null  ) {
 		return handle_error('GEOERROR', GEO.error);
@@ -103,21 +109,18 @@ function load ( cb, quiet ) {
 
 // COMMUNICATION
 
-
 function send_state ( state ) {
-	Pebble.sendAppMessage( {
+	var packet =  {
 		'TYPE': VAL_TYPE_STATE,
 		'STATE': state
-	},
-	function(e) {
-		console.log(state + ' state sent to Pebble successfully!');
-	},
-	function(e) {
-		console.log('Error sending ' + state + ' state to Pebble!');
-	});
+	} ;
+	QUEUE.send( packet );
 }
 
 function send_realtime ( ) {
+	// QUEUE.withdraw( function( packet ) {
+	//	 return packet.TYPE === VAL_TYPE_REALTIME && packet.UUID_SEND_REALTIME <= UUID_SEND_REALTIME
+	// });
 	++UUID_SEND_REALTIME;
 	var stops = STATE.data.realtime.stops ;
 	var n = stops.length ;
@@ -132,7 +135,7 @@ function send_realtime ( ) {
 			var result = results[j] ;
 			// TODO optimize by sending static data only once (colors)
 			// and send ids instead of names (line, destination, etc.)
-			var payload = {
+			var packet = {
 				'TYPE': VAL_TYPE_REALTIME, // 8 bits -> int32
 				'UUID_RUN': UUID_RUN, // int -> int32
 				'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> int32
@@ -148,13 +151,7 @@ function send_realtime ( ) {
 				// but then we'll probably have quantum/ADN watches
 				'REALTIME_UTC': utc.get32(result.when), // int -> int32
 			} ;
-			Pebble.sendAppMessage( payload,
-			function(e) {
-				console.log(state + ' state sent to Pebble successfully!');
-			},
-			function(e) {
-				console.log('Error sending ' + state + ' state to Pebble!');
-			});
+			QUEUE.send( packet );
 		}	
 	}
 }
