@@ -1,0 +1,30 @@
+{
+    "author": "aurelien.ooms@gmail.com",
+    "dependencies": {},
+    "keywords": [],
+    "name": "stib-mivb",
+    "pebble": {
+        "capabilities": [
+            "location"
+        ],
+        "displayName": "stib-mivb",
+        "enableMultiJS": true,
+        "messageKeys": [
+            "KEY_COMMUNICATION",
+            "KEY_STATE"
+        ],
+        "projectType": "native",
+        "resources": {
+            "media": []
+        },
+        "sdkVersion": "3",
+        "targetPlatforms": [
+            "chalk"
+        ],
+        "uuid": "48eaa2c2-f1f2-4e3e-aec8-3b8ae504ed3e",
+        "watchapp": {
+            "watchface": false
+        }
+    },
+    "version": "1.0.0"
+}
