@@ -141,8 +141,8 @@ function send_realtime ( ) {
 				'REALTIME_STOP_NAME': name, // string -> cstring
 				'REALTIME_LINE_NAME': result.line, // string -> cstring
 				'REALTIME_DESTINATION_NAME': result.destination, // string -> cstring
-				'REALTIME_FGCOLOR': parseInt(result.fgcolor, 16), // 24 bits -> int32
-				'REALTIME_BGCOLOR': parseInt(result.bgcolor, 16), // 24 bits -> int32
+				'REALTIME_FOREGROUND_COLOR': parseInt(result.fgcolor, 16), // 24 bits -> int32
+				'REALTIME_BACKGROUND_COLOR': parseInt(result.bgcolor, 16), // 24 bits -> int32
 				// utc.get32 will work till Date 2038-01-19T03:14:07.000Z
 				// i.e., new Date((Math.pow(2,31)-1)*1000);
 				// but then we'll probably have quantum/ADN watches
