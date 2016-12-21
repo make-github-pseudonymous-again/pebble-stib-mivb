@@ -35,9 +35,9 @@ static ds_DynamicArray *s_realtimes_index;
 static ds_DynamicArray *s_realtimes;
 
 static char minutes[2][4];
-TextLayer* fnumber[2];	
-TextLayer* fline[2];
-TextLayer* fminutes[2];
+TextLayer* s_line_number_layer[2];	
+TextLayer* s_destination_name_layer[2];
+TextLayer* s_minutes_layer[2];
 
 static Window *s_main_window;
 static StatusBarLayer *s_status_bar;
@@ -90,8 +90,14 @@ static void update_display_from_time(const time_t now) {
 		if ( _when === null ) continue ;
 
 		int16_t offset = i*35 ;
+		
+		// TODO fix
+		
+		number_layer = s_number_layer[i] ;
+		fline = s_destination_layer[i] ;
+		fminutes = s_minutes_layer[i] ;
 
-		fnumber[i] = text_layer_create(GRect(s_left, 30+offset, 32, 32));
+		fnumber = text_layer_create(GRect(s_left, 30+offset, 32, 32));
 		text_layer_set_font(fnumber, fonts_get_system_font(FONT));
 		text_layer_set_text_alignment(fnumber, GTextAlignmentCenter);
 		text_layer_set_overflow_mode(fnumber, GTextOverflowModeFill);
@@ -99,14 +105,14 @@ static void update_display_from_time(const time_t now) {
 		text_layer_set_text_color(fnumber, GColorFromHex(realtime->foreground_color));
 		text_layer_set_background_color(fnumber, GColorFromHex(realtime->background_color));
 		
-		fline[i] = text_layer_create(GRect(s_left+37, 30+offset, s_w-91, 20));
+		fline = text_layer_create(GRect(s_left+37, 30+offset, s_w-91, 20));
 		text_layer_set_font(fnumber, fonts_get_system_font(FONT));
 		text_layer_set_text_alignment(fnumber, GTextAlignmentLeft);
 		text_layer_set_overflow_mode(fnumber, GTextOverflowModeTrailingEllipsis);
 		text_layer_set_text(fnumber, realtime->destination_name);
 		text_layer_set_text_color(fnumber, GColorBlack);
 
-		fminutes[i] = text_layer_create(GRect(s_left+s_w-54, 30+offset, 22, 20));
+		fminutes = text_layer_create(GRect(s_left+s_w-54, 30+offset, 22, 20));
 		text_layer_set_font(fnumber, fonts_get_system_font(FONT));
 		text_layer_set_text_alignment(fnumber, GTextAlignmentCenter);
 		text_layer_set_overflow_mode(fnumber, GTextOverflowModeFill);
