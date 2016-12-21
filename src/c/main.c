@@ -1,9 +1,19 @@
 #include <pebble.h>
+#include "realtime.h"
+#include "ds/dynamicarray.h"
+#include "ds/bisect.h"
+#include "pebble/translate_error.h"
 
+
+static const uint32_t VAL_TYPE_STATE = 0 ;
+static const uint32_t VAL_TYPE_REALTIME = 1 ;
+
+static ds_DynamicArray *REALTIMES;
+
+// KO timeout
 static const int TKO = 60000 ;
 
 // colors
-
 static const int BOK = 0x55AA55 ;
 static const int FOK = 0xFFFFFF ;
 static const int BLO = 0xFFFF55 ;
@@ -14,64 +24,7 @@ static const int BNG = 0xFFAA00 ;
 static const int FNG = 0xFFFFFF ;
 static const int BG = 0xFFFFFF ;
 
-// https://stackoverflow.com/a/21172222/1582182
-char *translate_error(AppMessageResult result) {
-  switch (result) {
-    case APP_MSG_OK: return "APP_MSG_OK";
-    case APP_MSG_SEND_TIMEOUT: return "APP_MSG_SEND_TIMEOUT";
-    case APP_MSG_SEND_REJECTED: return "APP_MSG_SEND_REJECTED";
-    case APP_MSG_NOT_CONNECTED: return "APP_MSG_NOT_CONNECTED";
-    case APP_MSG_APP_NOT_RUNNING: return "APP_MSG_APP_NOT_RUNNING";
-    case APP_MSG_INVALID_ARGS: return "APP_MSG_INVALID_ARGS";
-    case APP_MSG_BUSY: return "APP_MSG_BUSY";
-    case APP_MSG_BUFFER_OVERFLOW: return "APP_MSG_BUFFER_OVERFLOW";
-    case APP_MSG_ALREADY_RELEASED: return "APP_MSG_ALREADY_RELEASED";
-    case APP_MSG_CALLBACK_ALREADY_REGISTERED: return "APP_MSG_CALLBACK_ALREADY_REGISTERED";
-    case APP_MSG_CALLBACK_NOT_REGISTERED: return "APP_MSG_CALLBACK_NOT_REGISTERED";
-    case APP_MSG_OUT_OF_MEMORY: return "APP_MSG_OUT_OF_MEMORY";
-    case APP_MSG_CLOSED: return "APP_MSG_CLOSED";
-    case APP_MSG_INTERNAL_ERROR: return "APP_MSG_INTERNAL_ERROR";
-    default: return "UNKNOWN ERROR";
-  }
-}
 
-// Growing array from https://stackoverflow.com/a/3536261/1582182
-
-typedef struct {
-  int *array;
-  size_t used;
-  size_t size;
-} Array;
-
-void initArray(Array *a, size_t initialSize) {
-  a->array = (int *)malloc(initialSize * sizeof(int));
-  a->used = 0;
-  a->size = initialSize;
-}
-
-void insertArray(Array *a, int element) {
-  if (a->used == a->size) {
-    a->size *= 2;
-    a->array = (int *)realloc(a->array, a->size * sizeof(int));
-  }
-  a->array[a->used++] = element;
-}
-
-void freeArray(Array *a) {
-  free(a->array);
-  a->array = NULL;
-  a->used = a->size = 0;
-}
-
-typedef struct RealtimePacket {
-	int stop_id;
-	char* stop_name;
-	char* line_name;
-	char* destination_name;
-	int foreground_color;
-	int background_color;
-	int utc;
-} RealtimePacket;
 
 static Window *s_main_window;
 static TextLayer *s_time_layer;
@@ -128,46 +81,44 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+	
   switch (dict_find(iterator, MESSAGE_KEY_TYPE)->value->uint32) {
     case VAL_TYPE_REALTIME: {
-      if (!stations) {
-        // New close stations.
-        uint32_t number = dict_find(iterator, KEY_NUMBER_OF_STATIONS)->value->uint32;
-        stations = Stations_new(number);
-      } else {
-        // If the stations array has already been allocated.
-        // free_stations(Stations);
-      }
 		
 		const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
 		const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
-		const uint32_t uuid_send_realtime_item = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME_ITEM)->value->uint32;
+		//const uint32_t uuid_send_realtime_item = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME_ITEM)->value->uint32;
 		
 		if ( uuid_run > UUID_RUN || uuid_send_realtime > UUID_SEND_REALTIME ) {
 			UUID_RUN = uuid_run;
 			UUID_SEND_REALTIME = uuid_send_realtime;
-			list_clear(realtimes);
+			ds_DynamicArray_free(REALTIMES);
 		}
 		
-	
+		const uint32_t stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32;
+		const char *stop_name = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_NAME)->value->cstring;
+		const char *line_name = dict_find(iterator, MESSAGE_KEY_REALTIME_LINE_NAME)->value->cstring;
+		const char *destination_name = dict_find(iterator, MESSAGE_KEY_REALTIME_DESTINATION_NAME)->value->cstring;
+		const uint32_t foreground_color = dict_find(iterator, MESSAGE_KEY_REALTIME_FOREGROUND_COLOR)->value->uint32;
+		const uint32_t background_color = dict_find(iterator, MESSAGE_KEY_REALTIME_BACKGROUND_COLOR)->value->uint32;
+		const uint32_t utc = dict_find(iterator, MESSAGE_KEY_REALTIME_UTC)->value->uint32;
 		
 	  // space for Realtime object must be dynamically allocated
 	  // space for cstring object must be dynamically allocated
-	  (Realtime) {
-		.stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32,
-		.stop_name = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_NAME)->value->cstring,
-		.line_name = dict_find(iterator, MESSAGE_KEY_REALTIME_LINE_NAME)->value->cstring,
-		.destination_name = dict_find(iterator, MESSAGE_KEY_REALTIME_DESTINATION_NAME)->value->cstring,
-		.foreground_color = dict_find(iterator, MESSAGE_KEY_REALTIME_FOREGROUND_COLOR)->value->uint32,
-		.background_color = dict_find(iterator, MESSAGE_KEY_REALTIME_BACKGROUND_COLOR)->value->uint32,
-		.utc = dict_find(iterator, MESSAGE_KEY_REALTIME_UTC)->value->uint32,
-	  };
+	  Realtime *realtime = Realtime_create(
+		stop_id,
+		stop_name,
+		line_name,
+		destination_name,
+		foreground_color,
+		background_color,
+		utc
+	  );
 
-      list_add(realtimes, realtime);
+      ds_DynamicArray_push(REALTIMES, realtime);
       break;
     }
-    case RESPONSE_UPDATED_STATIONS:
-    case RESPONSE_UPDATED_LOCATION: {
+    case VAL_TYPE_STATE: {
       DEBUG("Updating the location.");
 
       stations->update(stations, Station_new (
@@ -208,11 +159,11 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
-	APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped: %i - %s", reason, translate_error(reason));
+	APP_LOG(APP_LOG_LEVEL_ERROR, "Message dropped: %i - %s", reason, pebble_translate_error(reason));
 }
 
 static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
-	APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed: %i - %s", reason, translate_error(reason));
+	APP_LOG(APP_LOG_LEVEL_ERROR, "Outbox send failed: %i - %s", reason, pebble_translate_error(reason));
 }
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
