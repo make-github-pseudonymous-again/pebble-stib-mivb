@@ -17,7 +17,7 @@
             "UUID_SEND_REALTIME_ITEM",
             "REALTIME_STOP_ID",
             "REALTIME_STOP_NAME",
-            "REALTIME_LINE_NAME",
+            "REALTIME_LINE_NUMBER",
             "REALTIME_DESTINATION_NAME",
             "REALTIME_FOREGROUND_COLOR",
             "REALTIME_BACKGROUND_COLOR",

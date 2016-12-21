@@ -1,83 +1,245 @@
 #include <pebble.h>
+#include "minutes.h"
 #include "realtime.h"
-#include "ds/dynamicarray.h"
 #include "ds/bisect.h"
+#include "ds/dynamicarray.h"
 #include "pebble/translate_error.h"
 
+// CONSTANTS
 
 static const uint32_t VAL_TYPE_STATE = 0 ;
 static const uint32_t VAL_TYPE_REALTIME = 1 ;
-
-static ds_DynamicArray *REALTIMES;
+static const uint32_t VAL_TYPE_REALTIME_END = 2 ;
 
 // KO timeout
 static const int TKO = 60000 ;
 
 // colors
-static const int BOK = 0x55AA55 ;
-static const int FOK = 0xFFFFFF ;
-static const int BLO = 0xFFFF55 ;
-static const int FLO = 0x000000 ;
-static const int BKO = 0xFF0055 ;
-static const int FKO = 0xFFFFFF ;
-static const int BNG = 0xFFAA00 ;
-static const int FNG = 0xFFFFFF ;
-static const int BG = 0xFFFFFF ;
+static const GColor BOK = GColorFromHex(0x55AA55) ;
+static const GColor FOK = GColorFromHex(0xFFFFFF) ;
+static const GColor BLO = GColorFromHex(0xFFFF55) ;
+static const GColor FLO = GColorFromHex(0x000000) ;
+static const GColor BKO = GColorFromHex(0xFF0055) ;
+static const GColor FKO = GColorFromHex(0xFFFFFF) ;
+static const GColor BNG = GColorFromHex(0xFFAA00) ;
+static const GColor FNG = GColorFromHex(0xFFFFFF) ;
+static const GColor  BG = GColorFromHex(0xFFFFFF) ;
 
+// font
+static const char *FONT = FONT_KEY_GOTHIC_24_BOLD;
 
+// GLOBALS
+
+static uint32_t s_last_seen_stop_id;
+static ds_DynamicArray *s_realtimes_index;
+static ds_DynamicArray *s_realtimes;
+
+static char minutes[2][4];
+TextLayer* fnumber[2];	
+TextLayer* fline[2];
+TextLayer* fminutes[2];
 
 static Window *s_main_window;
-static TextLayer *s_time_layer;
-static uint32_t UUID_RUN;
-static uint32_t UUID_SEND_REALTIME;
+static StatusBarLayer *s_status_bar;
+static TextLayer *s_info_layer;
+static TextLayer *s_stop_name_layer;
+static TextLayer *s_message_layer;
+static uint32_t s_uuid_run;
+static uint32_t s_uuid_send_realtime;
+static GRect s_bounds;
+static GSize s_size ;
+static int16_t s_w ;
+static int16_t s_h ;
 
-static void _update_time(struct tm *tick_time) {
-	
-	// Write the current hours and minutes into a buffer
-	static char s_buffer[8];
-	strftime(s_buffer, sizeof(s_buffer), clock_is_24h_style() ? "%H:%M" : "%I:%M", tick_time);
 
-	// Display this time on the TextLayer
-	text_layer_set_text(s_time_layer, s_buffer);
+static void ad ( Layer* layer ) {
+	Layer *window_layer = window_get_root_layer(s_main_window);
+	layer_add_child(window_layer, layer);
 }
 
-static void update_time() {
+static void clear ( ) {
+	Layer *window_layer = window_get_root_layer(s_main_window);
+	layer_remove_child_layers(window_layer);
+}
 
-	// Get a tm structure
-	time_t temp = time(NULL);
-	struct tm *tick_time = localtime(&temp);
+static void update_display_from_time(const time_t now) {
+
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "display");
 	
-	// Update with that tm structure
-	_update_time(tick_time);
+	clear();
 	
+	STOP_ID = DATA.stops[STOP_INDEX].id ;
+	
+	FSTOP.text( DATA.stops[STOP_INDEX].name );
+	ad(FSTOP);
+	
+	if ( DATA.stops[STOP_INDEX].realtime.error ) {
+		FMESSAGE.text( DATA.stops[STOP_INDEX].realtime.message );
+		ad(FMESSAGE);
+		return ;
+	}
+	
+	var n = DATA.stops[STOP_INDEX].realtime.results.length;
+	
+	for ( size_t i = 0 ; i < 2 ; ++i ) {
+	
+		var next = DATA.stops[STOP_INDEX].realtime.results[i] ;
+		
+		var _when = when( next ) ;
+		
+		if ( _when === null ) continue ;
+
+		int16_t offset = i*35 ;
+
+		fnumber[i] = text_layer_create(GRect(s_left, 30+offset, 32, 32));
+		text_layer_set_font(fnumber, fonts_get_system_font(FONT));
+		text_layer_set_text_alignment(fnumber, GTextAlignmentCenter);
+		text_layer_set_overflow_mode(fnumber, GTextOverflowModeFill);
+		text_layer_set_text(fnumber, realtime->line_number);
+		text_layer_set_text_color(fnumber, GColorFromHex(realtime->foreground_color));
+		text_layer_set_background_color(fnumber, GColorFromHex(realtime->background_color));
+		
+		fline[i] = text_layer_create(GRect(s_left+37, 30+offset, s_w-91, 20));
+		text_layer_set_font(fnumber, fonts_get_system_font(FONT));
+		text_layer_set_text_alignment(fnumber, GTextAlignmentLeft);
+		text_layer_set_overflow_mode(fnumber, GTextOverflowModeTrailingEllipsis);
+		text_layer_set_text(fnumber, realtime->destination_name);
+		text_layer_set_text_color(fnumber, GColorBlack);
+
+		fminutes[i] = text_layer_create(GRect(s_left+s_w-54, 30+offset, 22, 20));
+		text_layer_set_font(fnumber, fonts_get_system_font(FONT));
+		text_layer_set_text_alignment(fnumber, GTextAlignmentCenter);
+		text_layer_set_overflow_mode(fnumber, GTextOverflowModeFill);
+		text_layer_set_text(fnumber, realtime->line_number);
+		text_layer_set_text_color(fnumber, GColorFromHex(realtime->foreground_color));
+
+		var fminutes = new UI.Text({
+		 text: _when.minutes ,
+		 color: _when.color ,
+		});	
+
+		layer_add_child(window_layer, fnumber);
+		layer_add_child(window_layer, fline);
+		layer_add_child(window_layer, fminutes);
+
+		if ( !quiet && k === 1 && _when.minutes === 0 ) Vibe.vibrate('double');
+		
+	}
+	
+	if ( k === 0 ) {
+		FMESSAGE.text( 'nothing right now' );
+		ad(FMESSAGE);
+	}
+	
+
+}
+
+static void update_display_from_tm(struct tm *tick_time) {
+	const time_t now = mktime(tick_time);
+	update_display_from_time(now);
+}
+
+static void update_display() {
+	time_t now = time(NULL);
+	update_display_from_time(tick_time);
+}
+
+static int16_t s_scroll = 0;
+static const int16_t s_lineheight = 16;
+
+static void scroll_up(){
+	
+}
+
+
+static void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "single click select");
+	other();
+}
+
+
+static void select_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "long click select");
+	load( null , true );
+}
+
+static void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "single click down");
+	scroll_down();
+}
+
+static void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "single click up");
+	scroll_up();
+}
+	
+static void config_provider(Window *window) {
+  	window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) select_single_click_handler);
+  	window_long_click_subscribe(BUTTON_ID_SELECT, 0, (ClickHandler) select_long_click_handler, NULL);
+  	window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) down_single_click_handler);
+  	window_single_click_subscribe(BUTTON_ID_UP, (ClickHandler) up_single_click_handler);
 }
 
 static void main_window_load(Window *window) {
 	// Get information about the Window
 	Layer *window_layer = window_get_root_layer(window);
-	GRect bounds = layer_get_bounds(window_layer);
+	s_bounds = layer_get_bounds(window_layer);
+	
+	s_size = s_bounds.size ;
+	s_w = s_size.w ;
+	s_h = s_size.h ;
+	s_left = 15;
+	
+	// Create the StatusBarLayer
+	s_status_bar = status_bar_layer_create();
+	status_bar_layer_set_colors(s_status_bar, BKO, FKO);
+	status_bar_layer_set_separator_mode(s_status_bar, StatusBarLayerSeparatorModeNone);
+	layer_add_child(window_layer, status_bar_layer_get_layer(s_status_bar));
+	
+	// Stop name text layer
+	var FSTOP = new UI.Text({
+	 position: new Vector2(25, 0),
+	 size: new Vector2(W - 50, 20),
+	 font: 'gothic-24-bold',
+	 backgroundColor: 'none',
+	 color: '#000000' ,
+	 textAlign: 'center',
+	 textOverflow: 'ellipsis'
+	});
 
-	// Create the TextLayer with specific bounds
-	s_time_layer = text_layer_create(
-		GRect(0, PBL_IF_ROUND_ELSE(58, 52), bounds.size.w, 50));
+	// Message text layer
+	var FMESSAGE = new UI.Text({
+	 position: new Vector2(LEFT, 30),
+	 size: new Vector2(W - 34, H - 30),
+	 font: 'gothic-24-bold',
+	 color: BKO ,
+	 textAlign: 'center',
+	 textOverflow: 'wrap'
+	});
+	
+	// Update display with cached information
+	update_display();
 
-	// Improve the layout to be more like a watchface
-	text_layer_set_background_color(s_time_layer, GColorClear);
-	text_layer_set_text_color(s_time_layer, GColorBlack);
-	text_layer_set_font(s_time_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
-	text_layer_set_text_alignment(s_time_layer, GTextAlignmentCenter);
+	// Register click events
+	window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
 
-	// Add it as a child layer to the Window's root layer
-	layer_add_child(window_layer, text_layer_get_layer(s_time_layer));
+	// display
+
+	var MAIN = new UI.Window({
+		scrollable: true,
+		window_set_background_color(window, BG);
+
+	});
 }
 
 static void main_window_unload(Window *window) {
-	// Destroy TextLayer
-	text_layer_destroy(s_time_layer);
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "main_window_unload");
+	status_bar_layer_destroy(s_status_bar);	
+	// TODO cache data on the watch
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-	_update_time(tick_time);
+	_update_display(tick_time);
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -89,9 +251,21 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 		const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
 		//const uint32_t uuid_send_realtime_item = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME_ITEM)->value->uint32;
 		
+		if ( uuid_run < UUID_RUN || ( uuid_run == UUID_RUN && uuid_send_realtime < UUID_SEND_REALTIME ) ) {
+			// this should  never happen
+			APP_LOG(APP_LOG_LEVEL_ERROR, "skipping message");
+			return;
+		}
+		
 		if ( uuid_run > UUID_RUN || uuid_send_realtime > UUID_SEND_REALTIME ) {
+			// we are receiving new realtime data, drop old
 			UUID_RUN = uuid_run;
 			UUID_SEND_REALTIME = uuid_send_realtime;
+			const size_t n = REALTIMES->length;
+			for (size_t i = 0 ; i < n ; ++i){
+				const Realtime *realtime = REALTIMES->data[i];
+				Realtime_free(realtime);
+			}
 			ds_DynamicArray_free(REALTIMES);
 		}
 		
@@ -103,56 +277,20 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 		const uint32_t background_color = dict_find(iterator, MESSAGE_KEY_REALTIME_BACKGROUND_COLOR)->value->uint32;
 		const uint32_t utc = dict_find(iterator, MESSAGE_KEY_REALTIME_UTC)->value->uint32;
 		
-	  // space for Realtime object must be dynamically allocated
-	  // space for cstring object must be dynamically allocated
-	  Realtime *realtime = Realtime_create(
-		stop_id,
-		stop_name,
-		line_name,
-		destination_name,
-		foreground_color,
-		background_color,
-		utc
-	  );
+		Realtime *realtime = Realtime_create(
+			stop_id,
+			stop_name,
+			line_name,
+			destination_name,
+			foreground_color,
+			background_color,
+			utc
+		);
 
-      ds_DynamicArray_push(REALTIMES, realtime);
-      break;
+		ds_DynamicArray_push(REALTIMES, realtime);
+		break;
     }
     case VAL_TYPE_STATE: {
-      DEBUG("Updating the location.");
-
-      stations->update(stations, Station_new (
-        dict_find(iterator, KEY_NAME)->value->cstring,
-        dict_find(iterator, KEY_PARKINGS)->value->uint32,
-        dict_find(iterator, KEY_FREE_BIKE)->value->uint32,
-        dict_find(iterator, KEY_DISTANCE)->value->uint32,
-        dict_find(iterator, KEY_ANGLE)->value->uint32
-      ));
-
-      // TODO No update if the current station is no longer in the array.
-
-      break;
-    }
-    case RESPONSE_ADD_STATIONS: {
-      DEBUG("Adding stations.");
-
-      stations->add(stations, Station_new (
-        dict_find(iterator, KEY_NAME)->value->cstring,
-        dict_find(iterator, KEY_PARKINGS)->value->uint32,
-        dict_find(iterator, KEY_FREE_BIKE)->value->uint32,
-        dict_find(iterator, KEY_DISTANCE)->value->uint32,
-        dict_find(iterator, KEY_ANGLE)->value->uint32
-      ));
-      break;
-    }
-    case RESPONSE_END: {
-      win_main_update ();
-
-      /* Reenable the tick timer to fetch new location. */
-      tick_timer_service_subscribe(SECOND_UNIT, second_handler);
-      break;
-    }
-    default: {
       break;
     }
 }
@@ -183,9 +321,6 @@ static void init() {
 	// Show the window on the watch with animated=true
 	window_stack_push(s_main_window, true);
 	
-	// Show current time
-	update_time();
-	
 	// Register with TickTimerService
 	tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 	
@@ -212,103 +347,6 @@ int main(void) {
 	deinit();
 }
 
-
-static void ad ( Layer* f ) {
-	WIDGETS.push(f);
-	MAIN.add(f);
-}
-
-static void rm ( Layer* f ) {
-	f.text('');
-	MAIN.remove(f);
-}
-
-static void clear ( ) {
-	var len = WIDGETS.length ;
-	for ( var i = 0 ; i < len ; ++i ) rm(WIDGETS[i]);
-	WIDGETS = [] ;
-}
-
-static void _display ( quiet ) {
-	
-	console.log('display');
-	
-	clear();
-	
-	STOP_ID = DATA.stops[STOP_INDEX].id ;
-	
-	FSTOP.text( DATA.stops[STOP_INDEX].name );
-	ad(FSTOP);
-	
-	if ( DATA.stops[STOP_INDEX].realtime.error ) {
-		FMESSAGE.text( DATA.stops[STOP_INDEX].realtime.message );
-		ad(FMESSAGE);
-		return ;
-	}
-	
-	var n = DATA.stops[STOP_INDEX].realtime.results.length;
-	
-	var k = 0 ;
-	
-	for ( var i = 0 ; i < n ; ++i ) {
-	
-		var next = DATA.stops[STOP_INDEX].realtime.results[i] ;
-		
-		var _when = when( next ) ;
-		
-		if ( _when === null ) continue ;
-
-		var offset = k*35 ;
-		++k ;
-
-		var fnumber = new UI.Text({
-		 position: new Vector2(LEFT, 30+offset),
-		 size: new Vector2(32, 32),
-		 font: 'gothic-24-bold',
-		 textAlign: 'center',
-		 textOverflow: 'fill',
-		 text: next.line,
-			// use GColorFromHEX(next.fgcolor)
-		 color: next.fgcolor,
-		 backgroundColor: next.bgcolor
-		});
-
-		var fline = new UI.Text({
-		 position: new Vector2(LEFT+37, 30+offset),
-		 size: new Vector2(W-91, 20),
-		 font: 'gothic-24-bold',
-		 color: '#000000' ,
-		 textAlign: 'left',
-		 textOverflow: 'ellipsis' ,
-		 text: next.destination
-		});
-
-		var fminutes = new UI.Text({
-		 position: new Vector2(LEFT+W-54,30+offset),
-		 size: new Vector2(22, 20),
-		 font: 'gothic-24-bold',
-		 text: _when.minutes ,
-		 color: _when.color ,
-		 backgroundColor: 'none',
-		 textAlign: 'center',
-		 textOverflow: 'fill'
-		});	
-
-		ad(fnumber);
-		ad(fline);
-		ad(fminutes);
-
-		if ( !quiet && k === 1 && _when.minutes === 0 ) Vibe.vibrate('double');
-		
-	}
-	
-	if ( k === 0 ) {
-		FMESSAGE.text( 'nothing right now' );
-		ad(FMESSAGE);
-	}
-	
-}
-
 static void other ( ) {
 	++STOP_INDEX ;
 	if ( STOP_INDEX >= DATA.stops.length ) STOP_INDEX = 0 ;
@@ -316,8 +354,10 @@ static void other ( ) {
 }
 
 
-static void handle_error ( title , message ) {
-	console.log( 'handle_error:', title, message ) ;
+static void handle_error ( const char* title , const char* message ) {
+	
+	APP_LOG(APP_LOG_LEVEL_ERROR, "handle_error:", title, message);
+	
 	if ( Date.now() - TIMESTAMP < TKO ) {
 		bindnav();
 		MAIN.status('color', FOK);
@@ -335,131 +375,12 @@ static void handle_error ( title , message ) {
 	bindload();
 }
 
-
-static Minutes when ( int expected_arrival ) {
-	time_t temp = time(NULL);
-	struct tm *tick_time = localtime(&temp);
-	int now = 0; // TODO find seconds since 1970 0 0 0 utc
-	// the +5 is to account for data transmission
-	// and code execution between data retrieval and display
-	int seconds = ( expected_arrival - now ) / 1000 + 5 ;
-	
-	APP_LOG(APP_LOG_LEVEL_DEBUG, expected_arrival , now , seconds);
-	
-	if ( seconds < -600 ) {
-		// 10 minutes ago can be safely ignored
-		return null ;
-	}
-	else if  ( seconds < 0 ) {
-		// probably already gone
-		return Minutes { color : 0xFF0055 , minutes : 0 } ;
-	}
-	else {
-		return Minutes { color : 0x555555 , minutes : seconds / 60 } ;
-	}
-}
-
-var FSTOP = new UI.Text({
- position: new Vector2(25, 0),
- size: new Vector2(W - 50, 20),
- font: 'gothic-24-bold',
- backgroundColor: 'none',
- color: '#000000' ,
- textAlign: 'center',
- textOverflow: 'ellipsis'
-});
-
-var FMESSAGE = new UI.Text({
- position: new Vector2(LEFT, 30),
- size: new Vector2(W - 34, H - 30),
- font: 'gothic-24-bold',
- color: BKO ,
- textAlign: 'center',
- textOverflow: 'wrap'
-});
-
-var SIZE = MAIN.size() ;
-var W = SIZE.x ;
-var H = SIZE.y ;
-var LEFT = 15;
-
-
-
-// display
-
-var WIDGETS = [];
-
-var MAIN = new UI.Window({
-	scrollable: true,
- 	backgroundColor: BG,
-	status: {
-		separator : 'none',
-		color: FKO,
-		backgroundColor: BKO
-	}
-});
-
-
-
-
-MAIN.show();
-
-
 static void loadsuccess (cb, fg, bg, quiet) {
-	MAIN.status('color', fg);
-	MAIN.status('backgroundColor', bg);
+	status_bar_layer_set_colors(s_status_bar, bg, fg);
 	TIMESTAMP = Date.now();
 	TIMEOUT = setTimeout( load , POLLRATE ) ;
 }
 
 static void loading ( ) {
-	MAIN.status('color', FLO ) ;
-	MAIN.status('backgroundColor', BLO ) ;
+	status_bar_layer_set_colors(s_status_bar, BLO, FLO);
 }
-
-static void bindload ( ) {
-	
-	unbind();
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "bindload");
-
-	MAIN.on('click', 'select', function(e) { console.log('click'); load( null , true ) ; } ) ;
-	MAIN.on('longClick', 'select', function(e) { console.log('longClick'); load( null , true ) ; } ) ;
-	
-	release();
-	
-}
-
-static void bindnav ( ) {
-	
-	unbind();
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "bindnav");
-	
-	MAIN.on('click', 'select', function(e) { console.log('click'); other() ; } ) ;
-	MAIN.on('longClick', 'select', function(e) { console.log('longClick'); load( null , true ) ; } ) ;
-
-	MAIN.on('hide', function(e){
-		console.log('hide'); 
-		if ( TIMEOUT !== null ) {
-			clearTimeout(TIMEOUT);
-			TIMEOUT = null ;
-		}
-		freeze();
-	});
-
-	MAIN.on('show', function(e){
-		console.log('show'); 
-		load( null , true );
-	});
-	
-	release();
-}
-
-static void unbind ( ) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "unbind");	
-	try { MAIN.off('click') ; }     catch ( e ) { }
-	try { MAIN.off('longClick') ; } catch ( e ) { }
-	try { MAIN.off('hide') ; }      catch ( e ) { }
-	try { MAIN.off('show') ; }      catch ( e ) { }	
-}
-
-

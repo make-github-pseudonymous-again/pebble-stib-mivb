@@ -11,6 +11,7 @@ var UUID_SEND_REALTIME = -1 ;
 
 var VAL_TYPE_STATE = 0 ;
 var VAL_TYPE_REALTIME = 1 ;
+var VAL_TYPE_REALTIME_END = 2 ;
 
 var VAL_STATE_LOADED_GEOERROR = 0 ;
 var VAL_STATE_LOADED = 1 ;
@@ -145,7 +146,7 @@ function send_realtime ( ) {
 				'UUID_SEND_REALTIME_ITEM': uuid_send_data_item, // int -> uint32
 				'REALTIME_STOP_ID': id, // int -> uint32
 				'REALTIME_STOP_NAME': name, // string -> cstring
-				'REALTIME_LINE_NAME': result.line, // string -> cstring
+				'REALTIME_LINE_NUMBER': result.line, // string -> cstring
 				'REALTIME_DESTINATION_NAME': result.destination, // string -> cstring
 				'REALTIME_FOREGROUND_COLOR': parseInt(result.fgcolor, 16)|0, // 24 bits -> uint32
 				'REALTIME_BACKGROUND_COLOR': parseInt(result.bgcolor, 16)|0, // 24 bits -> uint32
@@ -157,6 +158,14 @@ function send_realtime ( ) {
 			QUEUE.send( packet );
 		}	
 	}
+	
+	var endpacket = {
+		'TYPE': VAL_TYPE_REALTIME_END, // 8 bits -> uint32
+		'UUID_RUN': UUID_RUN, // int -> uint32
+		'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
+	} ;
+	
+	QUEUE.send( endpacket ); // means "now is a good time to refresh the screen"
 }
 
 // MAIN
