@@ -1,4 +1,5 @@
 #pragma once
+#include <pebble.h>
 
 typedef struct Realtime {
 	uint32_t stop_id;

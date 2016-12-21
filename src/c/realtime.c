@@ -1,6 +1,6 @@
 #include <pebble.h>
 #include "realtime.h"
-#include "u/copy.h"
+#include "std/strdup.h"
 
 (Realtime) {
 	.stop_id = stop_id,
@@ -23,9 +23,9 @@ Realtime* Realtime_create(
 ) {
 	Realtime* s = malloc(sizeof(Realtime));
 	
-	char *stop_name_copy = u_copy_string(stop_name);
-	char *line_name_copy = u_copy_string(line_name);
-	char *destination_name_copy = u_copy_string(destination_name);
+	char *stop_name_copy = strdup(stop_name);
+	char *line_name_copy = strdup(line_name);
+	char *destination_name_copy = strdup(destination_name);
 
   *s = (Station) {
     .free = Station_free,
