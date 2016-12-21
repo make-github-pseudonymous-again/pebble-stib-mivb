@@ -1,6 +1,18 @@
 #include <pebble.h>
 
-var TKO = 60000 ;
+static const int TKO = 60000 ;
+
+// colors
+
+static const int BOK = 0x55AA55 ;
+static const int FOK = 0xFFFFFF ;
+static const int BLO = 0xFFFF55 ;
+static const int FLO = 0x000000 ;
+static const int BKO = 0xFF0055 ;
+static const int FKO = 0xFFFFFF ;
+static const int BNG = 0xFFAA00 ;
+static const int FNG = 0xFFFFFF ;
+static const int BG = 0xFFFFFF ;
 
 // https://stackoverflow.com/a/21172222/1582182
 char *translate_error(AppMessageResult result) {
@@ -23,8 +35,48 @@ char *translate_error(AppMessageResult result) {
   }
 }
 
+// Growing array from https://stackoverflow.com/a/3536261/1582182
+
+typedef struct {
+  int *array;
+  size_t used;
+  size_t size;
+} Array;
+
+void initArray(Array *a, size_t initialSize) {
+  a->array = (int *)malloc(initialSize * sizeof(int));
+  a->used = 0;
+  a->size = initialSize;
+}
+
+void insertArray(Array *a, int element) {
+  if (a->used == a->size) {
+    a->size *= 2;
+    a->array = (int *)realloc(a->array, a->size * sizeof(int));
+  }
+  a->array[a->used++] = element;
+}
+
+void freeArray(Array *a) {
+  free(a->array);
+  a->array = NULL;
+  a->used = a->size = 0;
+}
+
+typedef struct RealtimePacket {
+	int stop_id;
+	char* stop_name;
+	char* line_name;
+	char* destination_name;
+	int foreground_color;
+	int background_color;
+	int utc;
+} RealtimePacket;
+
 static Window *s_main_window;
 static TextLayer *s_time_layer;
+static uint32_t UUID_RUN;
+static uint32_t UUID_SEND_REALTIME;
 
 static void _update_time(struct tm *tick_time) {
 	
@@ -41,6 +93,8 @@ static void update_time() {
 	// Get a tm structure
 	time_t temp = time(NULL);
 	struct tm *tick_time = localtime(&temp);
+	
+	// Update with that tm structure
 	_update_time(tick_time);
 	
 }
@@ -74,7 +128,83 @@ static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
+  switch (dict_find(iterator, MESSAGE_KEY_TYPE)->value->uint32) {
+    case VAL_TYPE_REALTIME: {
+      if (!stations) {
+        // New close stations.
+        uint32_t number = dict_find(iterator, KEY_NUMBER_OF_STATIONS)->value->uint32;
+        stations = Stations_new(number);
+      } else {
+        // If the stations array has already been allocated.
+        // free_stations(Stations);
+      }
+		
+		const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
+		const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
+		const uint32_t uuid_send_realtime_item = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME_ITEM)->value->uint32;
+		
+		if ( uuid_run > UUID_RUN || uuid_send_realtime > UUID_SEND_REALTIME ) {
+			UUID_RUN = uuid_run;
+			UUID_SEND_REALTIME = uuid_send_realtime;
+			list_clear(realtimes);
+		}
+		
+	
+		
+	  // space for Realtime object must be dynamically allocated
+	  // space for cstring object must be dynamically allocated
+	  (Realtime) {
+		.stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32,
+		.stop_name = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_NAME)->value->cstring,
+		.line_name = dict_find(iterator, MESSAGE_KEY_REALTIME_LINE_NAME)->value->cstring,
+		.destination_name = dict_find(iterator, MESSAGE_KEY_REALTIME_DESTINATION_NAME)->value->cstring,
+		.foreground_color = dict_find(iterator, MESSAGE_KEY_REALTIME_FOREGROUND_COLOR)->value->uint32,
+		.background_color = dict_find(iterator, MESSAGE_KEY_REALTIME_BACKGROUND_COLOR)->value->uint32,
+		.utc = dict_find(iterator, MESSAGE_KEY_REALTIME_UTC)->value->uint32,
+	  };
 
+      list_add(realtimes, realtime);
+      break;
+    }
+    case RESPONSE_UPDATED_STATIONS:
+    case RESPONSE_UPDATED_LOCATION: {
+      DEBUG("Updating the location.");
+
+      stations->update(stations, Station_new (
+        dict_find(iterator, KEY_NAME)->value->cstring,
+        dict_find(iterator, KEY_PARKINGS)->value->uint32,
+        dict_find(iterator, KEY_FREE_BIKE)->value->uint32,
+        dict_find(iterator, KEY_DISTANCE)->value->uint32,
+        dict_find(iterator, KEY_ANGLE)->value->uint32
+      ));
+
+      // TODO No update if the current station is no longer in the array.
+
+      break;
+    }
+    case RESPONSE_ADD_STATIONS: {
+      DEBUG("Adding stations.");
+
+      stations->add(stations, Station_new (
+        dict_find(iterator, KEY_NAME)->value->cstring,
+        dict_find(iterator, KEY_PARKINGS)->value->uint32,
+        dict_find(iterator, KEY_FREE_BIKE)->value->uint32,
+        dict_find(iterator, KEY_DISTANCE)->value->uint32,
+        dict_find(iterator, KEY_ANGLE)->value->uint32
+      ));
+      break;
+    }
+    case RESPONSE_END: {
+      win_main_update ();
+
+      /* Reenable the tick timer to fetch new location. */
+      tick_timer_service_subscribe(SECOND_UNIT, second_handler);
+      break;
+    }
+    default: {
+      break;
+    }
+}
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {
@@ -87,9 +217,6 @@ static void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResul
 
 static void outbox_sent_callback(DictionaryIterator *iterator, void *context) {
 	APP_LOG(APP_LOG_LEVEL_INFO, "Outbox send success!");
-}
-
-static void appmsg_in_dropped(AppMessageResult reason, void *context) {
 }
 
 static void init() {
@@ -135,23 +262,23 @@ int main(void) {
 }
 
 
-function ad ( f ) {
+static void ad ( Layer* f ) {
 	WIDGETS.push(f);
 	MAIN.add(f);
 }
 
-function rm ( f ) {
+static void rm ( Layer* f ) {
 	f.text('');
 	MAIN.remove(f);
 }
 
-function clear ( ) {
+static void clear ( ) {
 	var len = WIDGETS.length ;
 	for ( var i = 0 ; i < len ; ++i ) rm(WIDGETS[i]);
 	WIDGETS = [] ;
 }
 
-function _display ( quiet ) {
+static void _display ( quiet ) {
 	
 	console.log('display');
 	
@@ -231,14 +358,14 @@ function _display ( quiet ) {
 	
 }
 
-function other ( ) {
+static void other ( ) {
 	++STOP_INDEX ;
 	if ( STOP_INDEX >= DATA.stops.length ) STOP_INDEX = 0 ;
 	_display( true ) ;
 }
 
 
-function handle_error ( title , message ) {
+static void handle_error ( title , message ) {
 	console.log( 'handle_error:', title, message ) ;
 	if ( Date.now() - TIMESTAMP < TKO ) {
 		bindnav();
@@ -258,14 +385,15 @@ function handle_error ( title , message ) {
 }
 
 
-function when ( next ) {
-	var expected_arrival =  utc( next.when ) ;
-	var now = Date.now() ;
-	// the +5 is to account for code execution
-	// between data retrieval and display
-	var seconds = ( expected_arrival - now ) / 1000 + 5 ;
+static Minutes when ( int expected_arrival ) {
+	time_t temp = time(NULL);
+	struct tm *tick_time = localtime(&temp);
+	int now = 0; // TODO find seconds since 1970 0 0 0 utc
+	// the +5 is to account for data transmission
+	// and code execution between data retrieval and display
+	int seconds = ( expected_arrival - now ) / 1000 + 5 ;
 	
-	console.log( expected_arrival , now , seconds ) ;
+	APP_LOG(APP_LOG_LEVEL_DEBUG, expected_arrival , now , seconds);
 	
 	if ( seconds < -600 ) {
 		// 10 minutes ago can be safely ignored
@@ -273,10 +401,10 @@ function when ( next ) {
 	}
 	else if  ( seconds < 0 ) {
 		// probably already gone
-		return { color : '#FF0055' , minutes : 0 } ;
+		return Minutes { color : 0xFF0055 , minutes : 0 } ;
 	}
 	else {
-		return { color : '#555555' , minutes : seconds / 60 | 0 } ;
+		return Minutes { color : 0x555555 , minutes : seconds / 60 } ;
 	}
 }
 
@@ -326,22 +454,22 @@ var MAIN = new UI.Window({
 MAIN.show();
 
 
-function loadsuccess (cb, fg, bg, quiet) {
+static void loadsuccess (cb, fg, bg, quiet) {
 	MAIN.status('color', fg);
 	MAIN.status('backgroundColor', bg);
 	TIMESTAMP = Date.now();
 	TIMEOUT = setTimeout( load , POLLRATE ) ;
 }
 
-function loading ( ) {
+static void loading ( ) {
 	MAIN.status('color', FLO ) ;
 	MAIN.status('backgroundColor', BLO ) ;
 }
 
-function bindload ( ) {
+static void bindload ( ) {
 	
 	unbind();
-	console.log('bindload'); 
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "bindload");
 
 	MAIN.on('click', 'select', function(e) { console.log('click'); load( null , true ) ; } ) ;
 	MAIN.on('longClick', 'select', function(e) { console.log('longClick'); load( null , true ) ; } ) ;
@@ -350,10 +478,10 @@ function bindload ( ) {
 	
 }
 
-function bindnav ( ) {
+static void bindnav ( ) {
 	
 	unbind();
-	console.log('bindnav'); 
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "bindnav");
 	
 	MAIN.on('click', 'select', function(e) { console.log('click'); other() ; } ) ;
 	MAIN.on('longClick', 'select', function(e) { console.log('longClick'); load( null , true ) ; } ) ;
@@ -375,8 +503,8 @@ function bindnav ( ) {
 	release();
 }
 
-function unbind ( ) {
-	console.log('unbind'); 	
+static void unbind ( ) {
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "unbind");	
 	try { MAIN.off('click') ; }     catch ( e ) { }
 	try { MAIN.off('longClick') ; } catch ( e ) { }
 	try { MAIN.off('hide') ; }      catch ( e ) { }
@@ -384,14 +512,3 @@ function unbind ( ) {
 }
 
 
-// colors
-
-var BOK = '#55AA55' ;
-var FOK = '#FFFFFF' ;
-var BLO = '#FFFF55' ;
-var FLO = '#000000' ;
-var BKO = '#FF0055' ;
-var FKO = '#FFFFFF' ;
-var BNG = '#FFAA00' ;
-var FNG = '#FFFFFF' ;
-var BG = '#FFFFFF' ;

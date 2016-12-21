@@ -122,34 +122,37 @@ function send_realtime ( ) {
 	//	 return packet.TYPE === VAL_TYPE_REALTIME && packet.UUID_SEND_REALTIME <= UUID_SEND_REALTIME
 	// });
 	++UUID_SEND_REALTIME;
+	UUID_SEND_REALTIME|=0;
 	var stops = STATE.data.realtime.stops ;
 	var n = stops.length ;
 	var uuid_send_data_item = -1;
 	for ( var i = 0 ; i < n ; ++i ) {
 		var stop = stops[i] ;
-		var id = parseInt(stop.id, 10);
+		var id = (parseInt(stop.id, 10))|0;
 		var name = stop.name ;
 		var results = stop.realtime.results ;
 		var m = results.length ;
 		for ( var j = 0 ; j < m ; ++j, ++id ) {
+			++uuid_send_data_item;
+			uuid_send_data_item |= 0;
 			var result = results[j] ;
 			// TODO optimize by sending static data only once (colors)
 			// and send ids instead of names (line, destination, etc.)
 			var packet = {
-				'TYPE': VAL_TYPE_REALTIME, // 8 bits -> int32
-				'UUID_RUN': UUID_RUN, // int -> int32
-				'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> int32
-				'UUID_SEND_REALTIME_ITEM': ++uuid_send_data_item, // int -> int32
-				'REALTIME_STOP_ID': id, // int -> int32
+				'TYPE': VAL_TYPE_REALTIME, // 8 bits -> uint32
+				'UUID_RUN': UUID_RUN, // int -> uint32
+				'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
+				'UUID_SEND_REALTIME_ITEM': uuid_send_data_item, // int -> uint32
+				'REALTIME_STOP_ID': id, // int -> uint32
 				'REALTIME_STOP_NAME': name, // string -> cstring
 				'REALTIME_LINE_NAME': result.line, // string -> cstring
 				'REALTIME_DESTINATION_NAME': result.destination, // string -> cstring
-				'REALTIME_FOREGROUND_COLOR': parseInt(result.fgcolor, 16), // 24 bits -> int32
-				'REALTIME_BACKGROUND_COLOR': parseInt(result.bgcolor, 16), // 24 bits -> int32
+				'REALTIME_FOREGROUND_COLOR': parseInt(result.fgcolor, 16)|0, // 24 bits -> uint32
+				'REALTIME_BACKGROUND_COLOR': parseInt(result.bgcolor, 16)|0, // 24 bits -> uint32
 				// utc.get32 will work till Date 2038-01-19T03:14:07.000Z
 				// i.e., new Date((Math.pow(2,31)-1)*1000);
 				// but then we'll probably have quantum/ADN watches
-				'REALTIME_UTC': utc.get32(result.when), // int -> int32
+				'REALTIME_UTC': utc.get32(result.when), // int -> uint32
 			} ;
 			QUEUE.send( packet );
 		}	
@@ -160,7 +163,7 @@ function send_realtime ( ) {
 
 // Listen for when the watchface is opened
 Pebble.addEventListener('ready', function(e) {  
-	UUID_RUN = Date.now() / 1000 ;
+	UUID_RUN = (Date.now() / 1000)|0 ;
 	STATE.thaw();
 	if ( STATE.data.lat !== null && STATE.data.lon !== null ) load( GEO.start.bind(GEO) );
 	else GEO.start();

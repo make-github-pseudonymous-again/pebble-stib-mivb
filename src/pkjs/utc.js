@@ -32,7 +32,7 @@ function get ( string ) {
 }
 
 function get32 ( string ) {
-	return get( string ) / 1000 ;
+	return ( get( string ) / 1000 ) | 0 ;
 }
 
 module.exports.get = get ;
