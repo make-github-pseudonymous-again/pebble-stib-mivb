@@ -29,15 +29,19 @@ static const GColor  BG = GColorFromHex(0xFFFFFF) ;
 static const char *FONT = FONT_KEY_GOTHIC_24_BOLD;
 
 // GLOBALS
-
 static uint32_t s_last_seen_stop_id;
+// why use pointers if they are globals???
 static ds_DynamicArray *s_realtimes_index;
 static ds_DynamicArray *s_realtimes;
 
-static char minutes[2][4];
-TextLayer* s_line_number_layer[2];	
-TextLayer* s_destination_name_layer[2];
-TextLayer* s_minutes_layer[2];
+static ds_DynamicArray *s_stops_name;
+static char s_minutes_buffer[2][4];
+static TextLayer* s_line_number_layer[2];	
+static TextLayer* s_destination_name_layer[2];
+static TextLayer* s_minutes_layer[2];
+static ds_DynamicArray *s_stops_id;
+static uint32_t s_displayed_stop_id = 0;
+static size_t s_displayed_stop_index = 0;
 
 static Window *s_main_window;
 static StatusBarLayer *s_status_bar;
@@ -68,10 +72,10 @@ static void update_display_from_time(const time_t now) {
 	
 	clear();
 	
-	STOP_ID = DATA.stops[STOP_INDEX].id ;
+	s_displayed_stop_id = (uint32_t)s_stops_id->data[s_displayed_stop_index] ;
 	
-	FSTOP.text( DATA.stops[STOP_INDEX].name );
-	ad(FSTOP);
+	text_layer_set_text(s_stop_name_layer, s_stops_name->data[s_displayed_stop_index]);
+	ad(text_layer_get_layer(s_stop_name_layer));
 	
 	if ( DATA.stops[STOP_INDEX].realtime.error ) {
 		FMESSAGE.text( DATA.stops[STOP_INDEX].realtime.message );

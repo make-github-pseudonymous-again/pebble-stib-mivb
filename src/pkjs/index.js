@@ -126,26 +126,31 @@ function send_realtime ( ) {
 	UUID_SEND_REALTIME|=0;
 	var stops = STATE.data.realtime.stops ;
 	var n = stops.length ;
-	var uuid_send_data_item = -1;
 	for ( var i = 0 ; i < n ; ++i ) {
 		var stop = stops[i] ;
 		var id = (parseInt(stop.id, 10))|0;
 		var name = stop.name ;
+		
+		var stop_packet = {
+			'TYPE': VAL_TYPE_REALTIME_STOP, // 8 bits -> uint32
+			'UUID_RUN': UUID_RUN, // int -> uint32
+			'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
+			'REALTIME_STOP_ID': id, // int -> uint32
+			'REALTIME_STOP_NAME': name, // string -> cstring
+		} ;
+		QUEUE.send( stop_packet );
+		
 		var results = stop.realtime.results ;
 		var m = results.length ;
 		for ( var j = 0 ; j < m ; ++j, ++id ) {
-			++uuid_send_data_item;
-			uuid_send_data_item |= 0;
 			var result = results[j] ;
 			// TODO optimize by sending static data only once (colors)
 			// and send ids instead of names (line, destination, etc.)
 			var packet = {
-				'TYPE': VAL_TYPE_REALTIME, // 8 bits -> uint32
+				'TYPE': VAL_TYPE_REALTIME_TIME, // 8 bits -> uint32
 				'UUID_RUN': UUID_RUN, // int -> uint32
 				'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
-				'UUID_SEND_REALTIME_ITEM': uuid_send_data_item, // int -> uint32
 				'REALTIME_STOP_ID': id, // int -> uint32
-				'REALTIME_STOP_NAME': name, // string -> cstring
 				'REALTIME_LINE_NUMBER': result.line, // string -> cstring
 				'REALTIME_DESTINATION_NAME': result.destination, // string -> cstring
 				'REALTIME_FOREGROUND_COLOR': parseInt(result.fgcolor, 16)|0, // 24 bits -> uint32
