@@ -71,20 +71,20 @@ function loadsuccess (cb, geoerror, quiet) {
 }
 
 function load ( cb, quiet ) {
-	
+
 	console.log( 'try load' ) ;
-	
+
 	if ( !LOCK.acquire() ) return ;
-	
+
 	console.log( 'load' ) ;
-	
+
 	if ( TIMEOUT !== null ) {
 		clearTimeout(TIMEOUT);
 		TIMEOUT = null ;
 	}
-	
+
 	send_state( VAL_STATE_LOADING );
-	
+
 	if ( STATE.data.lat === null || STATE.data.lon === null  ) {
 		return handle_error('GEOERROR', GEO.error);
 	}
@@ -92,7 +92,7 @@ function load ( cb, quiet ) {
 	// TODO timeout and abort long requests
 	// Create the request
 	var request = new XMLHttpRequest();
-	
+
 	//request.addEventListener("progress", updateProgress);
 	request.addEventListener('load', loadsuccess( cb, GEO.error, quiet ));
 	request.addEventListener('error', loadfail( cb ));
@@ -130,7 +130,7 @@ function send_realtime ( ) {
 		var stop = stops[i] ;
 		var id = (parseInt(stop.id, 10))|0;
 		var name = stop.name ;
-		
+
 		var stop_packet = {
 			'TYPE': VAL_TYPE_REALTIME_STOP, // 8 bits -> uint32
 			'UUID_RUN': UUID_RUN, // int -> uint32
@@ -139,7 +139,7 @@ function send_realtime ( ) {
 			'REALTIME_STOP_NAME': name, // string -> cstring
 		} ;
 		QUEUE.send( stop_packet );
-		
+
 		var results = stop.realtime.results ;
 		var m = results.length ;
 		for ( var j = 0 ; j < m ; ++j, ++id ) {
@@ -161,22 +161,22 @@ function send_realtime ( ) {
 				'REALTIME_UTC': utc.get32(result.when), // int -> uint32
 			} ;
 			QUEUE.send( packet );
-		}	
+		}
 	}
-	
+
 	var endpacket = {
 		'TYPE': VAL_TYPE_REALTIME_END, // 8 bits -> uint32
 		'UUID_RUN': UUID_RUN, // int -> uint32
 		'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
 	} ;
-	
+
 	QUEUE.send( endpacket ); // means "now is a good time to refresh the screen"
 }
 
 // MAIN
 
 // Listen for when the watchface is opened
-Pebble.addEventListener('ready', function(e) {  
+Pebble.addEventListener('ready', function(e) {
 	UUID_RUN = (Date.now() / 1000)|0 ;
 	STATE.thaw();
 	if ( STATE.data.lat !== null && STATE.data.lon !== null ) load( GEO.start.bind(GEO) );
@@ -187,5 +187,5 @@ Pebble.addEventListener('ready', function(e) {
 Pebble.addEventListener('appmessage',
   function(e) {
     console.log('AppMessage received!');
-  }                     
+  }
 );

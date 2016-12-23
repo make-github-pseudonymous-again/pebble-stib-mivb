@@ -3,7 +3,6 @@
 
 typedef struct Realtime {
 	uint32_t stop_id;
-	const char* stop_name;
 	const char* line_number;
 	const char* destination_name;
 	uint32_t foreground_color;
@@ -13,7 +12,6 @@ typedef struct Realtime {
 
 Realtime* Realtime_create(
 	const uint32_t stop_id,
-	const char *stop_name,
 	const char *line_number,
 	const char *destination_name,
 	const uint32_t foreground_color,
