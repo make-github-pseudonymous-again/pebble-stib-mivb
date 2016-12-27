@@ -5,32 +5,40 @@
 #include "std/strdup.h"
 
 Stop* Stop_create(
-	const uint32_t stop_id,
-	const char *stop_name
+	const uint32_t id,
+	const char *name,
+	bool error,
+	const char *message
 ) {
 
 	Stop *stop = malloc(sizeof(Stop));
 
 	if (stop == NULL) return NULL;
 
-	const char *stop_name_copy = strdup(stop_name);
+	const char *name_copy = strdup(name);
+	const char *message_copy = strdup(message);
 
 	*stop = (Stop) {
-		.stop_id = stop_id,
-		.stop_name = stop_name_copy,
-		.realtimes = realtimes
+		.id = id,
+		.name = name_copy,
+		.error = error,
+		.message = message_copy
 	};
 
 	return stop;
 }
 
-void Stop_free(const Stop *stop) {
+void Stop_destroy(const Stop *stop) {
 
 	size_t n = stop->realtimes.length;
-	for (size_t i = 0; i < n; ++i) Realtime_free(stop->realtimes.data[i]);
-	ds_DynamicArray_free(&stop->realtimes);
+	for (size_t i = 0; i < n; ++i) {
+		Realtime *realtime = stop->realtimes.data[i];
+		Realtime_destroy(realtime);
+	}
+	ds_DynamicArray_clear(&stop->realtimes);
 
-	free((void*)stop->stop_name);
+	free((void*)stop->name);
+	free((void*)stop->message);
 	free((void*)stop);
 
 }

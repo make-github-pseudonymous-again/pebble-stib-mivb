@@ -1,12 +1,12 @@
 #include <pebble.h>
 #include "when.h"
 
-static GColor when ( char* buffer, time_t now, time_t expected_arrival ) {
+static GColor when ( char* buffer, const time_t now, const time_t expected_arrival ) {
 	// The +5 is to account for data transmission
 	// and code execution between data retrieval and display.
 	// Should probably send the time of retrieval to avoid
 	// data transmission delay.
-	time_t seconds = expected_arrival - now + 5 ;
+	const time_t seconds = expected_arrival - now + 5 ;
 
 	APP_LOG(APP_LOG_LEVEL_DEBUG, expected_arrival , now , seconds);
 

@@ -1,5 +1,6 @@
-#include <pebble.h>
+include <pebble.h>
 #include "when.h"
+#include "stops.h"
 #include "stop.h"
 #include "realtime.h"
 #include "ds/bisect.h"
@@ -44,13 +45,10 @@ static const char *MESSAGE_NOTHING = "nothing right now";
 // GLOBALS
 static int16_t s_scroll = 0;
 static uint32_t s_last_seen_stop_id;
-// why use pointers if they are globals???
-static ds_DynamicArray *s_realtimes_index;
-static ds_DynamicArray *s_realtimes;
-static ds_DynamicArray *s_stops;
-
-static ds_DynamicArray *s_stops_name;
-static ds_DynamicArray *s_stops_id;
+// list with displayed data
+static ds_DynamicArray s_stops;
+// list with data being received
+static ds_DynamicArray s_stops_recv;
 
 // memory necessary to display realtime
 static char s_minutes_buffer[DISPLAYED_ITEMS][WHEN_BUFFER_SIZE];
@@ -65,9 +63,9 @@ static uint32_t s_displayed_stop_id = 0;
 static size_t s_displayed_stop_index = 0;
 
 // initialized once, deleted on app kill
-static Window *s_main_window;
+static Window *s_main_window = NULL;
 // initialized once, deleted on app kill
-static StatusBarLayer *s_status_bar;
+static StatusBarLayer *s_status_bar = NULL;
 // initialized once, deleted on app kill
 static TextLayer *s_info_layer = NULL;
 // initialized once, deleted on app kill
@@ -81,9 +79,9 @@ static uint32_t s_uuid_send_realtime;
 
 // to store the dimensions of the main window
 static GRect s_bounds;
-static GSize s_size ;
-static int16_t s_w ;
-static int16_t s_h ;
+static GSize s_size;
+static int16_t s_w;
+static int16_t s_h;
 
 
 static void ad ( Layer* layer ) {
@@ -95,7 +93,7 @@ static void clear ( ) {
   Layer *window_layer = window_get_root_layer(s_main_window);
   layer_remove_child_layers(window_layer);
 
-  for ( size_t i = 0; i < DISPLAYED_ITEMS ; ++i ) {
+  for (size_t i = 0; i < DISPLAYED_ITEMS; ++i) {
     text_layer_destroy(s_number_layer[i]);
     text_layer_destroy(s_destination_layer[i]);
     text_layer_destroy(s_minutes_layer[i]);
@@ -103,13 +101,14 @@ static void clear ( ) {
     s_destination_layer[i] = NULL;
     s_minutes_layer[i] = NULL;
   }
+
   // TODO delete everything!
 }
 
-static void display_realtime_item(const time_t now, size_t i, Realtime* next){
+static void display_realtime_item(const time_t now, const size_t i, const Realtime* realtime){
 
   char *minutes_buffer = s_minutes_buffer[i];
-  GColor when_color = when(minutes_buffer, now, next->utc) ;
+  GColor when_color = when(minutes_buffer, now, realtime->utc) ;
 
   const int16_t offset = i*LINEHEIGHT ;
 
@@ -144,38 +143,43 @@ static void display_realtime_item(const time_t now, size_t i, Realtime* next){
 
 }
 
-static void update_display_from_time(const time_t now) {
+static void draw_from_time(const time_t now) {
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "update_display_from_time");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "draw_from_time");
 
-  clear();
+  scroll_fix();
 
-  s_displayed_stop_id = (uint32_t)s_stops_id->data[s_displayed_stop_index] ;
+  Layer *window_layer = window_get_root_layer(s_main_window);
 
-  text_layer_set_text(s_stop_name_layer, s_stops_name->data[s_displayed_stop_index]);
-  ad(text_layer_get_layer(s_stop_name_layer));
+  Stop *displayed_stop = s_stops.data[s_displayed_stop_index];
 
-  if ( s_stops->data[s_displayed_stop_index]->realtime->error ) {
-    text_layer_set_text(s_message_layer, s_stops->data[s_displayed_stop_index]->realtime->message);
-    ad(text_layer_get_layer(s_message_layer));
-    return ;
+  s_displayed_stop_id = displayed_stop->id ;
+
+  text_layer_set_text(s_stop_name_layer, displayed_stop->name);
+  layer_add_child(window_layer, text_layer_get_layer(s_stop_name_layer));
+
+  if ( displayed_stop->error ) {
+    text_layer_set_text(s_message_layer, displayed_stop->message);
+    layer_add_child(window_layer, text_layer_get_layer(s_message_layer));
+    return;
   }
 
-  if ( s_stops->data[s_displayed_stop_index]->realtime->results->length == 0 ) {
+  if ( displayed_stop->realtimes->length == 0 ) {
     text_layer_set_text(s_message_layer, MESSAGE_NOTHING);
-    ad(text_layer_get_layer(s_message_layer));
+    layer_add_child(window_layer, text_layer_get_layer(s_message_layer));
+    return;
   }
 
   else {
 
     for ( size_t i = 0; i < DISPLAYED_ITEMS ; ++i ) {
 
-      const size_t j = i + s_scroll;
+      const size_t j = i + s_scroll * DISPLAYED_ITEMS;
 
-      if ( j == s_stops->data[s_displayed_stop_index]->realtime->results->length ) break ;
+      if ( j == displayed_stop->realtimes.length ) break ;
 
-      Realtime* next = s_stops->data[s_displayed_stop_index]->realtimes->results->data[j] ;
-      display_realtime_item(now, i, next);
+      Realtime* realtime = displayed_stop->realtimes.data[j] ;
+      display_realtime_item(now, i, realtime);
 
     }
 
@@ -183,35 +187,45 @@ static void update_display_from_time(const time_t now) {
 
 }
 
-static void update_display_from_tm(struct tm *tick_time) {
-	const time_t now = mktime(tick_time);
-	update_display_from_time(now);
+static void draw_from_tm(struct tm *tick_time) {
+  const time_t now = mktime(tick_time);
+  draw_from_time(now);
 }
 
-static void update_display() {
-	time_t now = time(NULL);
-	update_display_from_time(tick_time);
+static void draw() {
+  const time_t now = time(NULL);
+  draw_from_time(now);
 }
 
 static void scroll_up(){
-
-  const size_t n = s_stops->data[s_displayed_stop_index]->realtime->results->length;
-  const size_t r = n % DISPLAYED_ITEMS ;
-  const size_t c = n / DISPLAYED_ITEMS ;
-  const size_t b = c + ((r>0)?1:0);
-
   ++s_scroll;
-
-  if (s_scroll >= b) s_scroll = b-1;
-
-  update_display();
-
+  clear();
+  draw();
 }
 
 static void scroll_down(){
-  if (s_scroll > 0) --s_scroll;
-  update_display();
+  --s_scroll;
+  clear();
+  draw();
 }
+
+static void scroll_fix(){
+
+  if (s_scroll < 0) s_scroll = 0;
+
+  else {
+
+    const size_t n = s_stops.data[s_displayed_stop_index]->realtime->results->length;
+    const size_t r = n % DISPLAYED_ITEMS ;
+    const size_t c = n / DISPLAYED_ITEMS ;
+    const size_t b = c + ((r>0)?1:0);
+
+    if (s_scroll >= b) s_scroll = b-1;
+
+  }
+
+}
+
 
 
 static void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
@@ -242,6 +256,7 @@ static void config_provider(Window *window) {
 }
 
 static void main_window_load(Window *window) {
+
   // Get information about the Window
   Layer *window_layer = window_get_root_layer(window);
   s_bounds = layer_get_bounds(window_layer);
@@ -276,23 +291,23 @@ static void main_window_load(Window *window) {
   text_layer_set_text_color(s_stop_name_layer, BKO);
 
   // Update display with cached information
-  update_display();
+  draw();
 
   // Register click events
   window_set_click_config_provider(window, (ClickConfigProvider) config_provider);
 
-  // display
-
 }
 
 static void main_window_unload(Window *window) {
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "main_window_unload");
-	status_bar_layer_destroy(s_status_bar);
-	// TODO cache data on the watch
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_window_unload");
+  status_bar_layer_destroy(s_status_bar);
+  text_layer_destroy(s_stop_name_layer);
+  text_layer_destroy(s_message_layer);
+  // TODO cache data on the watch
 }
 
 static void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
-	_update_display(tick_time);
+  draw_from_tm(tick_time);
 }
 
 static void inbox_received_callback(DictionaryIterator *iterator, void *context) {
@@ -305,63 +320,80 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
 
       if ( uuid_run < s_uuid_run || ( uuid_run == s_uuid_run && uuid_send_realtime < s_uuid_send_realtime ) ) {
 	      // this should  never happen
-	      APP_LOG(APP_LOG_LEVEL_ERROR, "skipping message");
+	      APP_LOG(APP_LOG_LEVEL_ERROR, "received old realtime message");
 	      return;
       }
 
       if ( uuid_run > s_uuid_run || uuid_send_realtime > s_uuid_send_realtime ) {
 	      // we are receiving new realtime data, drop old
+	      APP_LOG(APP_LOG_LEVEL_DEBUG, "receiving new realtime data");
 	      s_uuid_run = uuid_run;
 	      s_uuid_send_realtime = uuid_send_realtime;
-	      const size_t n = s_stops.length;
-	      for (size_t i = 0 ; i < n ; ++i){
-		      const Stop *stop = s_stops.data[i];
-		      Stop_free(stop);
-	      }
-	      ds_DynamicArray_free(s_stops);
+	      Stops_clear(&s_stops_recv);
       }
 
       const uint32_t stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32;
       const char *stop_name = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_NAME)->value->cstring;
+      const uint32_t stop_error = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ERROR)->value->uint32;
+      const char *stop_message = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_MESSAGE)->value->cstring;
 
+      Stop* stop = Stop_create(stop_id, stop_name, stop_error, stop_message);
+      ds_DynamicArray_push(&s_stops_recv, stop);
 
       break;
+
     }
-    case VAL_TYPE_REALTIME_TIME: {
+    case VAL_TYPE_REALTIME_REALTIME: {
 
-		const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
-		const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
-		//const uint32_t uuid_send_realtime_item = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME_ITEM)->value->uint32;
+      const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
+      const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
+      //const uint32_t uuid_send_realtime_item = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME_ITEM)->value->uint32;
 
-		if ( uuid_run != UUID_RUN || uuid_send_realtime != UUID_SEND_REALTIME ) {
-		    // this should  never happen
-		    APP_LOG(APP_LOG_LEVEL_ERROR, "skipping message");
-		    return;
-		}
+      if ( uuid_run != UUID_RUN || uuid_send_realtime != UUID_SEND_REALTIME ) {
+	// this should  never happen
+	APP_LOG(APP_LOG_LEVEL_ERROR, "received wrong realtime uuid");
+	return;
+      }
 
-		const uint32_t stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32;
-		const char *line_name = dict_find(iterator, MESSAGE_KEY_REALTIME_LINE_NAME)->value->cstring;
-		const char *destination_name = dict_find(iterator, MESSAGE_KEY_REALTIME_DESTINATION_NAME)->value->cstring;
-		const uint32_t foreground_color = dict_find(iterator, MESSAGE_KEY_REALTIME_FOREGROUND_COLOR)->value->uint32;
-		const uint32_t background_color = dict_find(iterator, MESSAGE_KEY_REALTIME_BACKGROUND_COLOR)->value->uint32;
-		const uint32_t utc = dict_find(iterator, MESSAGE_KEY_REALTIME_UTC)->value->uint32;
+      const uint32_t stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32;
+      const char *line_name = dict_find(iterator, MESSAGE_KEY_REALTIME_LINE_NAME)->value->cstring;
+      const char *destination_name = dict_find(iterator, MESSAGE_KEY_REALTIME_DESTINATION_NAME)->value->cstring;
+      const uint32_t foreground_color = dict_find(iterator, MESSAGE_KEY_REALTIME_FOREGROUND_COLOR)->value->uint32;
+      const uint32_t background_color = dict_find(iterator, MESSAGE_KEY_REALTIME_BACKGROUND_COLOR)->value->uint32;
+      const uint32_t utc = dict_find(iterator, MESSAGE_KEY_REALTIME_UTC)->value->uint32;
 
-		Realtime *realtime = Realtime_create(
-			stop_id,
-			line_name,
-			destination_name,
-			foreground_color,
-			background_color,
-			utc
-		);
+      Realtime *realtime = Realtime_create(
+	stop_id,
+	line_name,
+	destination_name,
+	foreground_color,
+	background_color,
+	utc
+      );
 
-		ds_DynamicArray_push(REALTIMES, realtime);
-		break;
+      Stop *stop = get_stop(&s_stops_recv, stop_id);
+
+      if ( stop == NULL ) {
+	// this should  never happen
+	APP_LOG(APP_LOG_LEVEL_ERROR, "stop object missing");
+	return;
+      }
+
+      ds_DynamicArray_push(&stop->realtime, realtime);
+      break;
+    }
+    case VAL_TYPE_REALTIME_END: {
+      // time to update the screen
+      ds_DynamicArray_swap(&s_stops, &s_stops_recv);
+      clear();
+      draw();
+      Stops_clear(&s_stops_recv);
+      break;
     }
     case VAL_TYPE_STATE: {
       break;
     }
-}
+  }
 }
 
 static void inbox_dropped_callback(AppMessageResult reason, void *context) {

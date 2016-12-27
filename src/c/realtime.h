@@ -19,4 +19,4 @@ Realtime* Realtime_create(
 	const uint32_t utc
 );
 
-void Realtime_free(const Realtime *realtime);
+void Realtime_destroy(const Realtime *realtime);

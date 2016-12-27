@@ -10,4 +10,4 @@ static const char *WHEN_GONE = ":(";
 static const char *WHEN_NOW = "0";
 
 
-static GColor when ( char *buffer, time_t now, time_t expected_arrival ) ;
+static GColor when ( char *buffer, const time_t now, const time_t expected_arrival ) ;

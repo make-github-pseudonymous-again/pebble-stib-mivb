@@ -29,7 +29,7 @@ Realtime* Realtime_create(
 	return realtime;
 }
 
-void Realtime_free(const Realtime *realtime) {
+void Realtime_destroy(const Realtime *realtime) {
 	free((void*)realtime->line_number);
 	free((void*)realtime->destination_name);
 	free((void*)realtime);

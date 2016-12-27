@@ -1,15 +1,20 @@
 #pragma once
 #include <pebble.h>
+#include "ds/dynamicarray.h"
 
 typedef struct Stop {
-	uint32_t stop_id;
-	const char* stop_name;
-	const ds_DynamicArray realtimes;
+	uint32_t id;
+	const char* name;
+	bool error;
+	const char *message;
+	const ds_DynamicArray realtime;
 } Stop;
 
 Stop* Stop_create(
-	const uint32_t stop_id,
-	const char *stop_name
+	const uint32_t id,
+	const char *name,
+	bool error,
+	const char* message
 );
 
-void Stop_free(const Stop *stop);
+void Stop_destroy(const Stop *stop);
