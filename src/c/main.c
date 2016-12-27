@@ -15,7 +15,7 @@ static const uint32_t VAL_TYPE_REALTIME_STOP = 2;
 static const uint32_t VAL_TYPE_REALTIME_END = 3;
 
 // KO timeout
-static const int TKO = 60000;
+static const time_t TKO = 60000;
 
 // colors
 static const GColor BOK = GColorMayGreen;
@@ -321,7 +321,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       if ( uuid_run < s_uuid_run || ( uuid_run == s_uuid_run && uuid_send_realtime < s_uuid_send_realtime ) ) {
 	      // this should  never happen
 	      APP_LOG(APP_LOG_LEVEL_ERROR, "received old realtime message");
-	      return;
+	      break;
       }
 
       if ( uuid_run > s_uuid_run || uuid_send_realtime > s_uuid_send_realtime ) {
@@ -352,7 +352,7 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       if ( uuid_run != UUID_RUN || uuid_send_realtime != UUID_SEND_REALTIME ) {
 	// this should  never happen
 	APP_LOG(APP_LOG_LEVEL_ERROR, "received wrong realtime uuid");
-	return;
+	break;
       }
 
       const uint32_t stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32;
@@ -376,13 +376,23 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       if ( stop == NULL ) {
 	// this should  never happen
 	APP_LOG(APP_LOG_LEVEL_ERROR, "stop object missing");
-	return;
+	break;
       }
 
       ds_DynamicArray_push(&stop->realtime, realtime);
       break;
     }
     case VAL_TYPE_REALTIME_END: {
+
+      const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
+      const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
+
+      if ( uuid_run != UUID_RUN || uuid_send_realtime != UUID_SEND_REALTIME ) {
+	// this should  never happen
+	APP_LOG(APP_LOG_LEVEL_ERROR, "received wrong realtime uuid");
+	break;
+      }
+
       // time to update the screen
       ds_DynamicArray_swap(&s_stops, &s_stops_recv);
       clear();
@@ -391,6 +401,25 @@ static void inbox_received_callback(DictionaryIterator *iterator, void *context)
       break;
     }
     case VAL_TYPE_STATE: {
+
+      switch(dict_find(iterator, MESSAGE_KEY_STATE)->value->uint32){
+	case VAL_STATE_LOADING:{
+	  status_bar_layer_set_colors(s_status_bar, BLO, FLO);
+	  break;
+        }
+	case VAL_STATE_LOADED:{
+	  status_bar_layer_set_colors(s_status_bar, BOK, FOK);
+	  break;
+        }
+	case VAL_STATE_LOADED_GEOERROR:{
+	  status_bar_layer_set_colors(s_status_bar, BNG, FNG);
+	  break;
+        }
+	case VAL_STATE_LOADED_ERROR:{
+	  status_bar_layer_set_colors(s_status_bar, BKO, FKO);
+	  break;
+        }
+      }
       break;
     }
   }
@@ -448,39 +477,38 @@ int main(void) {
 }
 
 static void other ( ) {
-	++STOP_INDEX ;
-	if ( STOP_INDEX >= DATA.stops.length ) STOP_INDEX = 0 ;
-	_display( true ) ;
-}
 
+  ++s_displayed_stop_index;
+
+  if ( s_displayed_stop_index >= s_stops.length ) {
+    // cycle
+    s_displayed_stop_index = 0 ;
+  }
+
+  clear();
+  draw();
+
+}
 
 static void handle_error ( const char* title , const char* message ) {
 
-	APP_LOG(APP_LOG_LEVEL_ERROR, "handle_error:", title, message);
+  APP_LOG(APP_LOG_LEVEL_ERROR, "handle_error:", title, message);
 
-	if ( Date.now() - TIMESTAMP < TKO ) {
-		bindnav();
-		MAIN.status('color', FOK);
-		MAIN.status('backgroundColor', BOK);
-		TIMEOUT = setTimeout( load , POLLRATE ) ;
-		return ;
-	}
-	MAIN.status('color', FKO);
-	MAIN.status('backgroundColor', BKO);
-	clear();
-	FSTOP.text( title );
-	FMESSAGE.text( message );
-	ad(FSTOP);
-	ad(FMESSAGE);
-	bindload();
-}
+  const time_t now = time(NULL);
 
-static void loadsuccess (cb, fg, bg, quiet) {
-	status_bar_layer_set_colors(s_status_bar, bg, fg);
-	TIMESTAMP = Date.now();
-	TIMEOUT = setTimeout( load , POLLRATE ) ;
-}
+  if ( now - (time_t)s_uuid_send_realtime < TKO ) {
+    status_bar_layer_set_colors(s_status_bar, BOK, FOK);
+    return ;
+  }
 
-static void loading ( ) {
-	status_bar_layer_set_colors(s_status_bar, BLO, FLO);
+  clear();
+  status_bar_layer_set_colors(s_status_bar, BKO, FKO);
+
+  Layer *window_layer = window_get_root_layer(s_main_window);
+
+  text_layer_set_text(s_stop_name_layer, title);
+  text_layer_set_text(s_message_layer, message);
+  layer_add_child(window_layer, text_layer_get_layer(s_stop_name_layer));
+  layer_add_child(window_layer, text_layer_get_layer(s_message_layer));
+
 }

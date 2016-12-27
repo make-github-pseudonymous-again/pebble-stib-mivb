@@ -38,37 +38,38 @@ var DEFAULT_STATE = {
 var STATE = state.create(DEFAULT_STATE);
 
 var GEO = geo.create( function ( should_update ) {
-	STATE.data.lat = GEO.lat ;
-	STATE.data.lon = GEO.lon ;
-	STATE.freeze();
-	if ( should_update || TIMEOUT === null ) load( ) ;
+  STATE.data.lat = GEO.lat ;
+  STATE.data.lon = GEO.lon ;
+  STATE.freeze();
+  if ( should_update || TIMEOUT === null ) load( ) ;
 });
 
 // REALTIME
 
 function handle_error () {
-	LOCK.release();
+  LOCK.release();
+  send_state(VAL_STATE_ERROR);
 }
 
 function loadfail (cb) {
-	return function (event) {
-		handle_error('API failed ' + event.status , event.response.message ) ;
-		if ( cb ) cb() ;
-	} ;
+  return function (event) {
+    handle_error('API failed ' + event.status , event.response.message ) ;
+    if ( cb ) cb() ;
+  } ;
 }
 
 function loadsuccess (cb, geoerror, quiet) {
-	return function ( event ) {
-		LOCK.release();
-		ERROR = null ;
-		STATE.data.realtime = event.response ;
-		STATE.freeze();
-		send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
-		send_realtime();
-		TIMESTAMP = Date.now();
-		TIMEOUT = setTimeout( load , POLLRATE ) ;
-		if ( cb ) cb() ;
-	} ;
+  return function ( event ) {
+    LOCK.release();
+    ERROR = null ;
+    STATE.data.realtime = event.response ;
+    STATE.freeze();
+    send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
+    send_realtime();
+    TIMESTAMP = Date.now();
+    TIMEOUT = setTimeout( load , POLLRATE ) ;
+    if ( cb ) cb() ;
+  } ;
 }
 
 function load ( cb, quiet ) {
