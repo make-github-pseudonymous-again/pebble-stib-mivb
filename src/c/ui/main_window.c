@@ -4,6 +4,32 @@
 #include "draw.h"
 #include "click.h"
 
+// initialized once, deleted on app kill
+Window *ui_main_window = NULL;
+// initialized once, deleted on app kill
+StatusBarLayer *ui_status_bar = NULL;
+// initialized once, deleted on app kill
+TextLayer *ui_info_layer = NULL;
+// initialized once, deleted on app kill
+TextLayer *ui_stop_name_layer = NULL;
+// initialized once, deleted on app kill
+TextLayer *ui_message_layer = NULL;
+
+// message displayed when no information is available at the current stop
+const char *MESSAGE_NOTHING = "nothing right now";
+
+// used to remember which stop we are displaying
+uint32_t ui_displayed_stop_id = 0;
+size_t ui_displayed_stop_index = 0;
+
+// memory necessary to display realtime
+char ui_minutes_buffer[DISPLAYED_ITEMS][WHEN_BUFFER_SIZE];
+
+// dynamically allocated and freed memory for layers displaying realtime
+TextLayer *ui_line_number_layer[DISPLAYED_ITEMS] = { NULL };
+TextLayer *ui_destination_name_layer[DISPLAYED_ITEMS] = { NULL };
+TextLayer *ui_minutes_layer[DISPLAYED_ITEMS] = { NULL };
+
 // to store the dimensions of the main window
 static GRect s_rect;
 static GSize s_size;

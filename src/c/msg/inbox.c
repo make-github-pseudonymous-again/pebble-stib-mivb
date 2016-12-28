@@ -8,15 +8,17 @@
 #include "../ui/color.h"
 #include "../pebble/translate_error.h"
 
-static const uint32_t VAL_TYPE_STATE = 0;
-static const uint32_t VAL_TYPE_REALTIME_REALTIME = 1;
-static const uint32_t VAL_TYPE_REALTIME_STOP = 2;
-static const uint32_t VAL_TYPE_REALTIME_END = 3;
+#define VAL_TYPE_STATE 0
+#define VAL_TYPE_REALTIME_REALTIME 1
+#define VAL_TYPE_REALTIME_STOP 2
+#define VAL_TYPE_REALTIME_END 3
 
-static const uint32_t VAL_STATE_LOADING = 0;
-static const uint32_t VAL_STATE_LOADED = 1;
-static const uint32_t VAL_STATE_LOADED_GEOERROR = 2;
-static const uint32_t VAL_STATE_LOADED_ERROR = 3;
+#define VAL_STATE_LOADING 0
+#define VAL_STATE_LOADED 1
+#define VAL_STATE_LOADED_GEOERROR 2
+#define VAL_STATE_LOADED_ERROR 3
+
+time_t inbox_last_loaded_event_ts;
 
 // used to keep track of last received message
 static uint32_t s_uuid_run;

@@ -3,7 +3,7 @@
 #include "../data/realtime.h"
 
 // KO timeout
-const time_t TKO = 60000;
+#define TKO 60000
 
 void draw();
 void draw_from_tm(struct tm *tick_time);

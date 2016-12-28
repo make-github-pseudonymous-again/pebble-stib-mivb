@@ -1,6 +1,13 @@
 #include <pebble.h>
 #include "when.h"
 
+const int WHEN_GONE_THRESHOLD = -600;
+
+// each string below must have size <= WHEN_BUFFER_SIZE - 1 (see when.h)
+const char *WHEN_IN_MORE_THAN_100_MINUTES = ">99";
+const char *WHEN_GONE = ":(";
+const char *WHEN_NOW = "0";
+
 GColor when ( char* buffer, const time_t now, const time_t expected_arrival ) {
 	// The +5 is to account for data transmission
 	// and code execution between data retrieval and display.

@@ -3,6 +3,9 @@
 #include "../ds/dynamicarray.h"
 #include "stop.h"
 
+ds_DynamicArray data_stops_curr;
+ds_DynamicArray data_stops_recv;
+
 Stop* get_stop(const ds_DynamicArray *stops, const uint32_t stop_id) {
 
   const size_t n = stops->length;
