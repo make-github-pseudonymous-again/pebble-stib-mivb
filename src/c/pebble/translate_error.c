@@ -1,5 +1,5 @@
 #include <pebble.h>
-#include "pebble/translate_error.h"
+#include "translate_error.h"
 
 // https://stackoverflow.com/a/21172222/1582182
 char *pebble_translate_error(AppMessageResult result) {

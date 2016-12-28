@@ -1,6 +1,6 @@
 #include <pebble.h>
 #include "realtime.h"
-#include "std/strdup.h"
+#include "../std/strdup.h"
 
 Realtime* Realtime_create(
 	const uint32_t stop_id,
@@ -29,7 +29,7 @@ Realtime* Realtime_create(
 	return realtime;
 }
 
-void Realtime_destroy(const Realtime *realtime) {
+void Realtime_destroy(Realtime *realtime) {
 	free((void*)realtime->line_number);
 	free((void*)realtime->destination_name);
 	free((void*)realtime);

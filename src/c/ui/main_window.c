@@ -2,6 +2,12 @@
 #include "ui/main_window.h"
 #include "ui/color.h"
 
+// to store the dimensions of the main window
+static GRect s_rect;
+static GSize s_size;
+static int16_t s_width;
+static int16_t s_height;
+
 GRect get_main_window_rect(){
   return s_rect;
 }

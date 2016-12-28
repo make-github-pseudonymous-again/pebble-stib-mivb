@@ -1,8 +1,8 @@
 #include <pebble.h>
-#include "ds/dynamicarray.h"
 #include "stop.h"
 #include "realtime.h"
-#include "std/strdup.h"
+#include "../ds/dynamicarray.h"
+#include "../std/strdup.h"
 
 Stop* Stop_create(
 	const uint32_t id,
@@ -28,14 +28,14 @@ Stop* Stop_create(
 	return stop;
 }
 
-void Stop_destroy(const Stop *stop) {
+void Stop_destroy(Stop *stop) {
 
-	size_t n = stop->realtimes.length;
+	size_t n = stop->realtime.length;
 	for (size_t i = 0; i < n; ++i) {
-		Realtime *realtime = stop->realtimes.data[i];
+		Realtime *realtime = stop->realtime.data[i];
 		Realtime_destroy(realtime);
 	}
-	ds_DynamicArray_clear(&stop->realtimes);
+	ds_DynamicArray_clear(&stop->realtime);
 
 	free((void*)stop->name);
 	free((void*)stop->message);

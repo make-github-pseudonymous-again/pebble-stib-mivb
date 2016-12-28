@@ -1,8 +1,8 @@
 #include <pebble.h>
-#include "ui/click.h"
-#include "ui/next.h"
-#include "ui/load.h"
-#include "ui/scroll.h"
+#include "click.h"
+#include "next.h"
+#include "load.h"
+#include "scroll.h"
 
 void click_config_provider(Window *window) {
   window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) select_single_click_handler);

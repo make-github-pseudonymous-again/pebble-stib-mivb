@@ -1,6 +1,6 @@
 #include <pebble.h>
 #include "outbox.h"
-#include "pebble/translate_error.h"
+#include "../pebble/translate_error.h"
 
 void outbox_failed_callback(DictionaryIterator *iterator, AppMessageResult reason, void *context) {
   int size = (int)iterator->end - (int)iterator->dictionary;

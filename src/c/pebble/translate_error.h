@@ -1,4 +1,4 @@
 #pragma once
 #include <pebble.h>
 
-char *pebble_translate_error(AppMessageResult);
+char *pebble_translate_error(AppMessageResult result);

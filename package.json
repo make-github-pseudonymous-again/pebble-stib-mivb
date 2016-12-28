@@ -21,7 +21,9 @@
             "REALTIME_DESTINATION_NAME",
             "REALTIME_FOREGROUND_COLOR",
             "REALTIME_BACKGROUND_COLOR",
-            "REALTIME_UTC"
+            "REALTIME_UTC",
+            "REALTIME_STOP_ERROR",
+            "REALTIME_STOP_MESSAGE"
         ],
         "projectType": "native",
         "resources": {

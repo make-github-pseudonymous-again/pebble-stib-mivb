@@ -1,8 +1,11 @@
 #include <pebble.h>
-#include "ui/draw.h"
-#include "ui/when.h"
-#include "data/stop.h"
-#include "data/realtime.h"
+#include "draw.h"
+#include "when.h"
+#include "scroll.h"
+#include "main_window.h"
+#include "../data/realtime.h"
+#include "../data/stop.h"
+#include "../data/stops.h"
 
 void draw_from_time(const time_t now) {
 
@@ -10,15 +13,15 @@ void draw_from_time(const time_t now) {
 
   scroll_fix();
 
-  Layer *window_layer = window_get_root_layer(s_main_window);
+  Layer *window_layer = window_get_root_layer(ui_main_window);
 
-  if (s_stops.length == 0){
-
+  if (data_stops_curr.length == 0){
+    // TODO handle no data drawing
   }
 
   else{
 
-    Stop *displayed_stop = s_stops.data[s_displayed_stop_index];
+    Stop *displayed_stop = data_stops_curr.data[s_displayed_stop_index];
 
     s_displayed_stop_id = displayed_stop->id ;
 

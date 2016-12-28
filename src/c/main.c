@@ -1,4 +1,4 @@
-include <pebble.h>
+#include <pebble.h>
 #include "ui/main_window.h"
 #include "ui/tick.h"
 #include "msg/inbox.h"
@@ -18,7 +18,7 @@ static void init() {
   window_stack_push(ui_main_window, true);
 
   // Register with TickTimerService
-  // Minute instead of second will consume less power
+  // (using minute instead of second uses less power)
   tick_timer_service_subscribe(MINUTE_UNIT, tick_handler);
 
   // Register callbacks

@@ -1,6 +1,6 @@
 #pragma once
 #include <pebble.h>
-#include "data/realtime.h"
+#include "../data/realtime.h"
 
 void draw();
 void draw_from_tm(struct tm *tick_time);
