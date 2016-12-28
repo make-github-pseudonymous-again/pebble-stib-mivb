@@ -25,6 +25,8 @@ void scroll_down(){
 void scroll_fix(){
 
   if (s_scroll < 0) s_scroll = 0;
+  
+  else if (data_stops_curr.length == 0) s_scroll = 0;
 
   else {
 

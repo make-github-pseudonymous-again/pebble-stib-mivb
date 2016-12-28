@@ -1,12 +1,12 @@
 #pragma once
 #include <pebble.h>
 
-static const GColor BOK = GColorMayGreen;
-static const GColor FOK = GColorWhite;
-static const GColor BLO = GColorIcterine;
-static const GColor FLO = GColorBlack;
-static const GColor BKO = GColorFolly;
-static const GColor FKO = GColorWhite;
-static const GColor BNG = GColorChromYellow;
-static const GColor FNG = GColorWhite;
-static const GColor  BG = GColorWhite;
+const GColor BOK = GColorMayGreen;
+const GColor FOK = GColorWhite;
+const GColor BLO = GColorIcterine;
+const GColor FLO = GColorBlack;
+const GColor BKO = GColorFolly;
+const GColor FKO = GColorWhite;
+const GColor BNG = GColorChromeYellow;
+const GColor FNG = GColorWhite;
+const GColor  BG = GColorWhite;

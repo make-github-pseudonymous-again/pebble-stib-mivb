@@ -107,9 +107,23 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       	APP_LOG(APP_LOG_LEVEL_ERROR, "received wrong realtime uuid");
       	break;
       }
-
+      
       // time to update the screen
+      
+      // swap stop lists
       ds_DynamicArray_swap(&data_stops_curr, &data_stops_recv);
+      
+      // search for most recently displayed stop
+      ui_displayed_stop_index = 0; // default: show closest
+      const size_t n = data_stops_curr.length;
+      for (size_t i = 0 ; i < n ; ++i){
+        Stop *stop = data_stops_curr.data[i];
+        if (stop->id == ui_displayed_stop_id) {
+          ui_displayed_stop_index = i;
+          break;
+        }
+      }
+
       clear();
       draw();
       Stops_clear(&data_stops_recv);
@@ -123,6 +137,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       	  break;
         }
       	case VAL_STATE_LOADED:{
+          inbox_last_loaded_event_ts = time(NULL);
       	  status_bar_layer_set_colors(ui_status_bar, BOK, FOK);
       	  break;
         }
