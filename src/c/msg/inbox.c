@@ -101,7 +101,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
       if ( stop == NULL ) {
       	// this should  never happen
-      	APP_LOG(APP_LOG_LEVEL_ERROR, "stop object %d missing", stop_id);
+      	APP_LOG(APP_LOG_LEVEL_ERROR, "stop object %lu missing", stop_id);
       	break;
       }
 
@@ -169,13 +169,13 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       	  break;
         }
         default: {
-          APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown state %d", state);
+          APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown state %lu", state);
         }
       }
       break;
     }
     default: {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown type %d", type);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown type %lu", type);
     }
   }
 }

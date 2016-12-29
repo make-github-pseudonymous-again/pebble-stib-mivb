@@ -15,7 +15,7 @@ GColor when ( char* buffer, const time_t now, const time_t expected_arrival ) {
 	// data transmission delay.
 	const time_t seconds = expected_arrival - now + 5 ;
 
-	APP_LOG(APP_LOG_LEVEL_DEBUG, "%d %d %d", expected_arrival , now , seconds);
+	APP_LOG(APP_LOG_LEVEL_DEBUG, "%ld %ld %ld", expected_arrival , now , seconds);
 
 	if ( seconds < WHEN_GONE_THRESHOLD ) {
 		strcpy(buffer, WHEN_GONE);

@@ -11,7 +11,7 @@
 
 void draw_from_time(const time_t now) {
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] draw_from_time(%d)", now);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] draw_from_time(%ld)", now);
 
   scroll_fix();
 

@@ -12,6 +12,7 @@ State.prototype.freeze = function ( ) {
 State.prototype.thaw = function ( ) {
   try{
     var raw = localStorage.getItem('state');
+    if (!raw) throw new Error();
     this.data = JSON.parse(raw);
   }
   catch(e){
