@@ -39,7 +39,7 @@ var DEFAULT_STATE = {
 var STATE = state.create(DEFAULT_STATE);
 
 var GEO = geo.create( function ( should_update ) {
-  console.log('geocb', JSON.stringify(STATE), JSON.stringify(GEO));
+  console.log('geocb');
   STATE.data.lat = GEO.lat ;
   STATE.data.lon = GEO.lon ;
   STATE.freeze();

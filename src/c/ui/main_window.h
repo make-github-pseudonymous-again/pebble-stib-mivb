@@ -74,6 +74,8 @@
 // font
 #define FONT FONT_KEY_GOTHIC_24_BOLD
 
+#define UI_DISPLAYED_STOP_ID_PERSIST_KEY 0
+
 extern Window *ui_main_window;
 extern StatusBarLayer *ui_status_bar;
 extern TextLayer *ui_info_layer;

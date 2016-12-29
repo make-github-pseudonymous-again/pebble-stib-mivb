@@ -108,6 +108,11 @@ void main_window_load(Window *window) {
   // Init data
   ds_DynamicArray_init(&data_stops_curr, 1);
   ds_DynamicArray_init(&data_stops_recv, 1);
+  
+  // Load cached data
+  if (persist_exists(UI_DISPLAYED_STOP_ID_PERSIST_KEY)){
+    ui_displayed_stop_id = persist_read_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY);
+  }
 
   // Update display with cached information
   draw();
@@ -123,5 +128,6 @@ void main_window_unload(Window *window) {
   status_bar_layer_destroy(ui_status_bar);
   text_layer_destroy(ui_stop_name_layer);
   text_layer_destroy(ui_message_layer);
-  // TODO cache data on the watch
+  persist_write_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY, ui_displayed_stop_id);
+  // TODO cache ALL data on the watch
 }
