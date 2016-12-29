@@ -14,12 +14,13 @@ var VAL_TYPE_REALTIME_STOP = 1 ;
 var VAL_TYPE_REALTIME_REALTIME = 2 ;
 var VAL_TYPE_REALTIME_END = 3 ;
 
-var VAL_STATE_LOADED_GEOERROR = 0 ;
+var VAL_STATE_LOADING = 0 ;
 var VAL_STATE_LOADED = 1 ;
-var VAL_STATE_LOADING = 2 ;
+var VAL_STATE_LOADED_GEOERROR = 2 ;
+var VAL_STATE_LOADED_ERROR = 3 ;
+var VAL_STATE_RECV = 4 ;
 
 var TIMESTAMP = 0 ;
-var ERROR = null ;
 var POLLRATE = 30000 ;
 
 var TIMEOUT = null;
@@ -29,15 +30,16 @@ var LOCK = lock.create();
 var QUEUE = messagequeue.create();
 
 var DEFAULT_STATE = {
-	lat : null ,
-	lon : null ,
-	realtime : null ,
-	stop_id : null
+	lat : undefined ,
+	lon : undefined ,
+	realtime : undefined ,
+	stop_id : undefined
 } ;
 
 var STATE = state.create(DEFAULT_STATE);
 
 var GEO = geo.create( function ( should_update ) {
+  console.log('geocb', JSON.stringify(STATE), JSON.stringify(GEO));
   STATE.data.lat = GEO.lat ;
   STATE.data.lon = GEO.lon ;
   STATE.freeze();
@@ -46,26 +48,43 @@ var GEO = geo.create( function ( should_update ) {
 
 // REALTIME
 
-function handle_error () {
+function handle_error (title, message) {
+  console.log('handle_error', title, message);
   LOCK.release();
-  send_state(VAL_STATE_ERROR);
+  send_state(VAL_STATE_LOADED_ERROR);
 }
 
-function loadfail (cb) {
+function loadfail (req, cb) {
   return function (event) {
-    handle_error('API failed ' + event.status , event.response.message ) ;
+    console.log('loadfail');
+    handle_error('[load]', 'failed to connect to service') ;
     if ( cb ) cb() ;
   } ;
 }
 
-function loadsuccess (cb, geoerror, quiet) {
+function loadsuccess (req, cb, geoerror, quiet) {
   return function ( event ) {
+    console.log('loadsuccess');
     LOCK.release();
-    ERROR = null ;
-    STATE.data.realtime = event.response ;
+    var response = null;
+    try{
+      response = JSON.parse(req.responseText);
+    }
+    catch(e){
+      handle_error('API failed ' + req.status , 'failed to parse JSON response');
+      if ( cb ) cb() ;
+      return;
+    }
+    if (response.error) {
+      handle_error('API error ' + req.status , '<'+response.error+'> ' + response.message ) ;
+      if ( cb ) cb() ;
+      return;
+    }
+    STATE.data.realtime = response;
     STATE.freeze();
-    send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
+    send_state(VAL_STATE_RECV);
     send_realtime();
+    send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
     TIMESTAMP = Date.now();
     TIMEOUT = setTimeout( load , POLLRATE ) ;
     if ( cb ) cb() ;
@@ -87,7 +106,7 @@ function load ( cb, quiet ) {
 
 	send_state( VAL_STATE_LOADING );
 
-	if ( STATE.data.lat === null || STATE.data.lon === null  ) {
+	if ( STATE.data.lat === undefined || STATE.data.lon === undefined  ) {
 		return handle_error('GEOERROR', GEO.error);
 	}
 
@@ -96,15 +115,16 @@ function load ( cb, quiet ) {
 	var request = new XMLHttpRequest();
 
 	//request.addEventListener("progress", updateProgress);
-	request.addEventListener('load', loadsuccess( cb, GEO.error, quiet ));
-	request.addEventListener('error', loadfail( cb ));
+	request.addEventListener('load', loadsuccess( request, cb, GEO.error, quiet ));
+	request.addEventListener('error', loadfail( request, cb ));
 	//request.addEventListener("abort", transferCanceled);
 
 	// Send the request
 	var url = api.url(STATE.data.lat, STATE.data.lon);
 	request.open('GET', url);
 	request.setRequestHeader('Content-Type', 'application/json');
-	request.responseType = 'json' ;
+	//request.responseType = 'json' ;
+  console.log('request', url);
 	request.send();
 }
 
@@ -113,6 +133,7 @@ function load ( cb, quiet ) {
 // COMMUNICATION
 
 function send_state ( state ) {
+  console.log('send_state');
 	var packet =  {
 		'TYPE': VAL_TYPE_STATE,
 		'STATE': state
@@ -121,6 +142,7 @@ function send_state ( state ) {
 }
 
 function send_realtime ( ) {
+  console.log('send_realtime');
 	// QUEUE.withdraw( function( packet ) {
 	//	 return packet.TYPE === VAL_TYPE_REALTIME && packet.UUID_SEND_REALTIME <= UUID_SEND_REALTIME
 	// });
@@ -128,27 +150,31 @@ function send_realtime ( ) {
 	UUID_SEND_REALTIME|=0;
 	var stops = STATE.data.realtime.stops ;
 	var n = stops.length ;
+  if (n < 1) {
+    console.log('[send_realtime] nothing to send');
+    return;
+  }
 	for ( var i = 0 ; i < n ; ++i ) {
 		var stop = stops[i] ;
-		var id = (parseInt(stop.id, 10))|0;
-		var name = stop.name ;
-		var error = stop.realtime.error ;
-		var message = stop.realtime.message ;
+		var stop_id = (parseInt(stop.id, 10))|0;
+		var stop_name = stop.name ;
+		var stop_error = stop.realtime.error ;
+		var stop_message = stop.realtime.message ;
 
 		var stop_packet = {
 			'TYPE': VAL_TYPE_REALTIME_STOP, // 8 bits -> uint32
 			'UUID_RUN': UUID_RUN, // int -> uint32
 			'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
-			'REALTIME_STOP_ID': id, // int -> uint32
-			'REALTIME_STOP_NAME': name, // string -> cstring
-			'REALTIME_STOP_ERROR': error, // 1 bit -> uint32
-			'REALTIME_STOP_MESSAGE': message, // string -> cstring
+			'REALTIME_STOP_ID': stop_id, // int -> uint32
+			'REALTIME_STOP_NAME': stop_name, // string -> cstring
+			'REALTIME_STOP_ERROR': stop_error, // 1 bit -> uint32
+			'REALTIME_STOP_MESSAGE': stop_message, // string -> cstring
 		} ;
 		QUEUE.send( stop_packet );
 
 		var results = stop.realtime.results ;
 		var m = results.length ;
-		for ( var j = 0 ; j < m ; ++j, ++id ) {
+		for ( var j = 0 ; j < m ; ++j ) {
 			var result = results[j] ;
 			// TODO optimize by sending static data only once (colors)
 			// and send ids instead of names (line, destination, etc.)
@@ -156,7 +182,7 @@ function send_realtime ( ) {
 				'TYPE': VAL_TYPE_REALTIME_REALTIME, // 8 bits -> uint32
 				'UUID_RUN': UUID_RUN, // int -> uint32
 				'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
-				'REALTIME_STOP_ID': id, // int -> uint32
+				'REALTIME_STOP_ID': stop_id, // int -> uint32
 				'REALTIME_LINE_NUMBER': result.line, // string -> cstring
 				'REALTIME_DESTINATION_NAME': result.destination, // string -> cstring
 				'REALTIME_FOREGROUND_COLOR': parseInt(result.fgcolor, 16)|0, // 24 bits -> uint32
@@ -185,7 +211,7 @@ function send_realtime ( ) {
 Pebble.addEventListener('ready', function(e) {
 	UUID_RUN = (Date.now() / 1000)|0 ;
 	STATE.thaw();
-	if ( STATE.data.lat !== null && STATE.data.lon !== null ) load( GEO.start.bind(GEO) );
+	if ( STATE.data.lat !== undefined && STATE.data.lon !== undefined ) load( GEO.start.bind(GEO) );
 	else GEO.start();
 });
 

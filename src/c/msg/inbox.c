@@ -9,14 +9,15 @@
 #include "../pebble/translate_error.h"
 
 #define VAL_TYPE_STATE 0
-#define VAL_TYPE_REALTIME_REALTIME 1
-#define VAL_TYPE_REALTIME_STOP 2
+#define VAL_TYPE_REALTIME_STOP 1
+#define VAL_TYPE_REALTIME_REALTIME 2
 #define VAL_TYPE_REALTIME_END 3
 
 #define VAL_STATE_LOADING 0
 #define VAL_STATE_LOADED 1
 #define VAL_STATE_LOADED_GEOERROR 2
 #define VAL_STATE_LOADED_ERROR 3
+#define VAL_STATE_RECV 4
 
 time_t inbox_last_loaded_event_ts;
 
@@ -29,7 +30,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
   int size = (int)iterator->end - (int)iterator->dictionary;
   APP_LOG(APP_LOG_LEVEL_DEBUG, "[inbox] Received %d bytes", size);
 
-  switch (dict_find(iterator, MESSAGE_KEY_TYPE)->value->uint32) {
+  const uint32_t type = dict_find(iterator, MESSAGE_KEY_TYPE)->value->uint32;
+  switch (type) {
     case VAL_TYPE_REALTIME_STOP: {
       const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
       const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
@@ -51,8 +53,15 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
       const uint32_t stop_id = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ID)->value->uint32;
       const char *stop_name = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_NAME)->value->cstring;
-      const uint32_t stop_error = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ERROR)->value->uint32;
-      const char *stop_message = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_MESSAGE)->value->cstring;
+      Tuple *stop_error_tuple = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_ERROR);
+      Tuple *stop_message_tuple = dict_find(iterator, MESSAGE_KEY_REALTIME_STOP_MESSAGE);
+      uint32_t stop_error = 0;
+      const char *stop_message = NULL;
+      if (stop_error_tuple != NULL) {
+        stop_error = stop_error_tuple->value->uint32;
+        stop_message = "missing error message";
+      }
+      if (stop_message_tuple != NULL) stop_message = stop_message_tuple->value->cstring;
 
       Stop* stop = Stop_create(stop_id, stop_name, stop_error, stop_message);
       ds_DynamicArray_push(&data_stops_recv, stop);
@@ -125,6 +134,10 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
           break;
         }
       }
+      if (n > 0) {
+        Stop *stop = data_stops_curr.data[ui_displayed_stop_index];
+        ui_displayed_stop_id = stop->id;
+      }
 
       clear();
       draw();
@@ -132,8 +145,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       break;
     }
     case VAL_TYPE_STATE: {
-
-      switch(dict_find(iterator, MESSAGE_KEY_STATE)->value->uint32){
+      const uint32_t state = dict_find(iterator, MESSAGE_KEY_STATE)->value->uint32;
+      switch(state){
       	case VAL_STATE_LOADING:{
       	  status_bar_layer_set_colors(ui_status_bar, BLO, FLO);
       	  break;
@@ -151,8 +164,18 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       	  status_bar_layer_set_colors(ui_status_bar, BKO, FKO);
       	  break;
         }
+      	case VAL_STATE_RECV:{
+      	  status_bar_layer_set_colors(ui_status_bar, BRC, FRC);
+      	  break;
+        }
+        default: {
+          APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown state %d", state);
+        }
       }
       break;
+    }
+    default: {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown type %d", type);
     }
   }
 }

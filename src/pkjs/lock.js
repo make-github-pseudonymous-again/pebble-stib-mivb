@@ -7,16 +7,16 @@ function Lock ( ) {
 
 Lock.prototype.acquire = function ( ) {
 	if ( this._LOCK ) {
-		console.log( 'could not acquire lock ' + this._UUID ) ;
+		console.log( 'could not acquire lock', this._UUID ) ;
 		return false ;
 	}
-	console.log( 'acquired lock' + this._UUID ) ;
+	console.log( 'acquired lock', this._UUID ) ;
 	this._LOCK = true ;
 	return true ;
 } ;
 
 Lock.prototype.release = function ( ) {
-	console.log( 'released lock ' + this._UUID ) ;
+	console.log( 'released lock', this._UUID ) ;
 	this._LOCK = false ;
 } ;
 

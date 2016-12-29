@@ -5,7 +5,7 @@
 typedef struct Stop {
 	uint32_t id;
 	const char* name;
-	bool error;
+	uint32_t error;
 	const char *message;
 	ds_DynamicArray realtime;
 } Stop;
@@ -13,7 +13,7 @@ typedef struct Stop {
 Stop* Stop_create(
 	const uint32_t id,
 	const char *name,
-	bool error,
+	const uint32_t error,
 	const char* message
 );
 

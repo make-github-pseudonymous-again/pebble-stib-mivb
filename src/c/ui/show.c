@@ -12,6 +12,11 @@ void show_next ( ) {
     // cycle
     ui_displayed_stop_index = 0 ;
   }
+  
+  if (data_stops_curr.length > 0) {
+    Stop *stop = data_stops_curr.data[ui_displayed_stop_index];
+    ui_displayed_stop_id = stop->id;
+  }
 
   clear();
   draw();
@@ -21,6 +26,12 @@ void show_next ( ) {
 void show_closest ( ) {
 
   ui_displayed_stop_index = 0;
+  
+  if (data_stops_curr.length > 0) {
+    Stop *stop = data_stops_curr.data[ui_displayed_stop_index];
+    ui_displayed_stop_id = stop->id;
+  }
+  
   clear();
   draw();
 

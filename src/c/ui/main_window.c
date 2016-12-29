@@ -3,6 +3,9 @@
 #include "color.h"
 #include "draw.h"
 #include "click.h"
+#include "../data/stops.h"
+#include "../ds/dynamicarray.h"
+
 
 // initialized once, deleted on app kill
 Window *ui_main_window = NULL;
@@ -37,6 +40,7 @@ static int16_t s_width;
 static int16_t s_height;
 static int16_t s_left;
 static int16_t s_top;
+static int16_t s_title;
 
 GRect get_main_window_rect(){
   return s_rect;
@@ -62,6 +66,10 @@ int16_t get_main_window_top(){
   return s_top;
 }
 
+int16_t get_main_window_title(){
+  return s_title;
+}
+
 void main_window_load(Window *window) {
 
   // Get information about the Window
@@ -73,6 +81,7 @@ void main_window_load(Window *window) {
   s_height = s_size.h ;
   s_left = MARGIN_LEFT;
   s_top = MARGIN_TOP;
+  s_title = TITLE_HEIGHT;
 
   // Set background color
   window_set_background_color(window, BG);
@@ -83,18 +92,22 @@ void main_window_load(Window *window) {
   status_bar_layer_set_separator_mode(ui_status_bar, StatusBarLayerSeparatorModeNone);
 
   // Stop name text layer
-  ui_stop_name_layer = text_layer_create(GRect(25, 0, s_width-50, 20));
+  ui_stop_name_layer = text_layer_create(GRect(25, s_top, s_width-50, s_title));
   text_layer_set_font(ui_stop_name_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(ui_stop_name_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(ui_stop_name_layer, GTextOverflowModeTrailingEllipsis);
   text_layer_set_text_color(ui_stop_name_layer, GColorBlack);
 
   // Message text layer
-  ui_message_layer = text_layer_create(GRect(s_left, s_top, s_width - 34, s_height - s_top));
+  ui_message_layer = text_layer_create(GRect(s_left, s_top+s_title, s_width - 34, s_height - s_top - s_title));
   text_layer_set_font(ui_message_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(ui_message_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(ui_message_layer, GTextOverflowModeWordWrap);
   text_layer_set_text_color(ui_message_layer, BKO);
+  
+  // Init data
+  ds_DynamicArray_init(&data_stops_curr, 1);
+  ds_DynamicArray_init(&data_stops_recv, 1);
 
   // Update display with cached information
   draw();

@@ -3,13 +3,15 @@
 #include "when.h"
 
 // TODO make those dimensions depend on the watch model
-#define DISPLAYED_ITEMS 2
+#define DISPLAYED_ITEMS 3
 #define BOXHEIGHT 32
+#define BOXWIDTH 32
 #define MARGIN 3
 #define LINEHEIGHT (BOXHEIGHT + MARGIN)
 
 #define MARGIN_LEFT 15
-#define MARGIN_TOP 30
+#define MARGIN_TOP 25
+#define TITLE_HEIGHT 25
 
 // font
 #define FONT FONT_KEY_GOTHIC_24_BOLD
@@ -38,3 +40,4 @@ int16_t get_main_window_width();
 int16_t get_main_window_height();
 int16_t get_main_window_left();
 int16_t get_main_window_top();
+int16_t get_main_window_title();

@@ -32,7 +32,7 @@ void draw_from_time(const time_t now) {
   text_layer_set_text(ui_stop_name_layer, displayed_stop->name);
   layer_add_child(window_layer, text_layer_get_layer(ui_stop_name_layer));
 
-  if ( displayed_stop->error ) {
+  if ( displayed_stop->error != 0 ) {
     text_layer_set_text(ui_message_layer, displayed_stop->message);
     layer_add_child(window_layer, text_layer_get_layer(ui_message_layer));
     return;
@@ -78,7 +78,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
 
   const int16_t offset = i*LINEHEIGHT;
   const int16_t l = get_main_window_left();
-  const int16_t t = get_main_window_top();
+  const int16_t t = get_main_window_top() + get_main_window_title() + 3;
   const int16_t w = get_main_window_width();
 
   TextLayer* line_number_layer = text_layer_create(GRect(l, t+offset, BOXHEIGHT, BOXHEIGHT));
@@ -90,7 +90,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
   text_layer_set_background_color(line_number_layer, GColorFromHEX(realtime->background_color));
   ui_line_number_layer[i] = line_number_layer;
 
-  TextLayer* destination_name_layer = text_layer_create(GRect(l+37, t+offset, w-91, 20));
+  TextLayer* destination_name_layer = text_layer_create(GRect(l+37, t+offset, w-91, BOXHEIGHT));
   text_layer_set_font(destination_name_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(destination_name_layer, GTextAlignmentLeft);
   text_layer_set_overflow_mode(destination_name_layer, GTextOverflowModeTrailingEllipsis);
@@ -98,7 +98,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
   text_layer_set_text_color(destination_name_layer, GColorBlack);
   ui_destination_name_layer[i] = destination_name_layer;
 
-  TextLayer* minutes_layer = text_layer_create(GRect(l+w-54, t+offset, 22, 20));
+  TextLayer* minutes_layer = text_layer_create(GRect(l+w-54, t+offset, 22, BOXHEIGHT));
   text_layer_set_font(minutes_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(minutes_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(minutes_layer, GTextOverflowModeFill);
@@ -113,6 +113,8 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
 }
 
 void clear() {
+  
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "clear");
   
   Layer *window_layer = window_get_root_layer(ui_main_window);
   layer_remove_child_layers(window_layer);
@@ -130,7 +132,7 @@ void clear() {
 
 void handle_error ( const char* title , const char* message ) {
 
-  APP_LOG(APP_LOG_LEVEL_ERROR, "handle_error:", title, message);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "handle_error: %s %s", title, message);
 
   const time_t now = time(NULL);
   const time_t time_since_last_loaded_event = now - inbox_last_loaded_event_ts;
@@ -139,7 +141,6 @@ void handle_error ( const char* title , const char* message ) {
     return ;
   }
 
-  clear();
   status_bar_layer_set_colors(ui_status_bar, BKO, FKO);
 
   Layer *window_layer = window_get_root_layer(ui_main_window);

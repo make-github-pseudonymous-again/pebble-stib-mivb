@@ -7,7 +7,7 @@
 Stop* Stop_create(
 	const uint32_t id,
 	const char *name,
-	bool error,
+	const uint32_t error,
 	const char *message
 ) {
 
@@ -16,7 +16,8 @@ Stop* Stop_create(
 	if (stop == NULL) return NULL;
 
 	const char *name_copy = strdup(name);
-	const char *message_copy = strdup(message);
+  const char *message_copy = NULL;
+  if (message != NULL) message_copy = strdup(message);
 
 	*stop = (Stop) {
 		.id = id,
@@ -24,6 +25,8 @@ Stop* Stop_create(
 		.error = error,
 		.message = message_copy
 	};
+  
+  ds_DynamicArray_init(&stop->realtime, 1);
 
 	return stop;
 }

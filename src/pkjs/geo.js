@@ -1,5 +1,3 @@
-var state = require('./state');
-
 var NAVIGATOR_GEOLOCATION_OPTS = {
 	maximumAge:0,
 	timeout:5000,
@@ -17,8 +15,7 @@ function Geo ( cb ) {
 Geo.prototype.onsuccess = function ( position ) {
 	this.lat = position.coords.latitude;
 	this.lon = position.coords.longitude;
-	state.freeze();
-	console.log( 'geosuccess', this.lat, this.lon ) ;
+	console.log( 'geosuccess', this.lat, this.lon) ;
 	var failed_just_before = this.error !== null ;
 	this.error = null ;
 	this.cb(failed_just_before);

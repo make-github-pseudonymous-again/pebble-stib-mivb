@@ -1,12 +1,12 @@
 #include <pebble.h>
 #include "dynamicarray.h"
 
-int ds_DynamicArray_init(ds_DynamicArray *a, size_t initialSize) {
-  a->data = (void**)malloc(initialSize * sizeof(void*));
+int ds_DynamicArray_init(ds_DynamicArray *a, size_t capacity) {
+  a->data = (void**)malloc(capacity * sizeof(void*));
   if (a->data == NULL) return 1;
 
   a->length = 0;
-  a->capacity = initialSize;
+  a->capacity = capacity;
 
   return 0;
 }
@@ -30,6 +30,9 @@ int ds_DynamicArray_push(ds_DynamicArray *a, void *element) {
 }
 
 void ds_DynamicArray_clear(ds_DynamicArray *a) {
+  // probably would be smarter to have a
+  // method that just resets the length to zero
+  // to avoid freeing/reallocating all the time
   free((void*)a->data);
   a->data = NULL;
   a->length = a->capacity = 0;
