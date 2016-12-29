@@ -33,8 +33,8 @@ void scroll_fix(){
     const Stop *stop = data_stops_curr.data[ui_displayed_stop_index];
     const size_t n = stop->realtime.length;
     // TODO avoid overflow
-    const int16_t r = n % DISPLAYED_ITEMS ;
-    const int16_t c = n / DISPLAYED_ITEMS ;
+    const int16_t r = n % SCROLL_STEP ;
+    const int16_t c = n / SCROLL_STEP ;
     const int16_t b = c + ((r>0)?1:0);
 
     if (s_scroll >= b) s_scroll = b-1;

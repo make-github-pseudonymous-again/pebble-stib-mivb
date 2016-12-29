@@ -4,13 +4,20 @@ function State ( dflt ) {
 }
 
 State.prototype.freeze = function ( ) {
-	console.log('freeze', JSON.stringify(this.data));
-	localStorage.setItem('state', this.data);
+	console.log('freeze');
+  var raw = JSON.stringify(this.data);
+	localStorage.setItem('state', raw);
 } ;
 
 State.prototype.thaw = function ( ) {
-	//this.data = localStorage.getItem('state') || this.dflt ;
-	//console.log('thaw', JSON.stringify(this.data));
+  try{
+    var raw = localStorage.getItem('state');
+    this.data = JSON.parse(raw);
+  }
+  catch(e){
+    this.data = this.dflt;
+  }
+	console.log('thaw');
 } ;
 
 function create ( dflt ) {

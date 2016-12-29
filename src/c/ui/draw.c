@@ -48,7 +48,7 @@ void draw_from_time(const time_t now) {
 
     for ( size_t i = 0; i < DISPLAYED_ITEMS ; ++i ) {
 
-      const size_t j = i + get_scroll() * DISPLAYED_ITEMS;
+      const size_t j = i + get_scroll() * SCROLL_STEP;
 
       if ( j == displayed_stop->realtime.length ) break ;
 
@@ -90,7 +90,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
   text_layer_set_background_color(line_number_layer, GColorFromHEX(realtime->background_color));
   ui_line_number_layer[i] = line_number_layer;
 
-  TextLayer* destination_name_layer = text_layer_create(GRect(l+37, t+offset, w-91, BOXHEIGHT));
+  TextLayer* destination_name_layer = text_layer_create(GRect(l+37, t+offset, w-37-MINUTES_WIDTH-BOXWIDTH, BOXHEIGHT));
   text_layer_set_font(destination_name_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(destination_name_layer, GTextAlignmentLeft);
   text_layer_set_overflow_mode(destination_name_layer, GTextOverflowModeTrailingEllipsis);
@@ -98,7 +98,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
   text_layer_set_text_color(destination_name_layer, GColorBlack);
   ui_destination_name_layer[i] = destination_name_layer;
 
-  TextLayer* minutes_layer = text_layer_create(GRect(l+w-54, t+offset, 22, BOXHEIGHT));
+  TextLayer* minutes_layer = text_layer_create(GRect(l+w-54, t+offset, MINUTES_WIDTH, BOXHEIGHT));
   text_layer_set_font(minutes_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(minutes_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(minutes_layer, GTextOverflowModeFill);
