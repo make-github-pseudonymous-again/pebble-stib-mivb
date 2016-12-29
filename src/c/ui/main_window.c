@@ -92,14 +92,14 @@ void main_window_load(Window *window) {
   status_bar_layer_set_separator_mode(ui_status_bar, StatusBarLayerSeparatorModeNone);
 
   // Stop name text layer
-  ui_stop_name_layer = text_layer_create(GRect(25, s_top, s_width-50, s_title));
+  ui_stop_name_layer = text_layer_create(GRect(s_left+10, s_top, s_width - 2*(s_left+10), s_title));
   text_layer_set_font(ui_stop_name_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(ui_stop_name_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(ui_stop_name_layer, GTextOverflowModeTrailingEllipsis);
   text_layer_set_text_color(ui_stop_name_layer, GColorBlack);
 
   // Message text layer
-  ui_message_layer = text_layer_create(GRect(s_left, s_top+s_title, s_width - 34, s_height - s_top - s_title));
+  ui_message_layer = text_layer_create(GRect(s_left, s_top+s_title, s_width - 2*s_left, s_height - s_top - s_title));
   text_layer_set_font(ui_message_layer, fonts_get_system_font(FONT));
   text_layer_set_text_alignment(ui_message_layer, GTextAlignmentCenter);
   text_layer_set_overflow_mode(ui_message_layer, GTextOverflowModeWordWrap);

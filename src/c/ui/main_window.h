@@ -3,17 +3,73 @@
 #include "when.h"
 
 // TODO make those dimensions depend on the watch model
-#define DISPLAYED_ITEMS 4
-#define SCROLL_STEP 3
-#define BOXHEIGHT 32
-#define BOXWIDTH 32
-#define MARGIN 3
-#define LINEHEIGHT (BOXHEIGHT + MARGIN)
-
-#define MARGIN_LEFT 15
-#define MARGIN_TOP 25
-#define TITLE_HEIGHT 25
-#define MINUTES_WIDTH 22
+#if defined(PBL_PLATFORM_APLITE)
+  #define DISPLAYED_ITEMS 4
+  #define SCROLL_STEP 3
+  #define BOXHEIGHT 32
+  #define BOXWIDTH 32
+  #define MARGIN 3
+  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
+  
+  #define MARGIN_LEFT 5
+  #define MARGIN_TOP 20
+  #define TITLE_HEIGHT 25
+  #define MINUTES_WIDTH 22
+#else
+#if defined(PBL_PLATFORM_BASALT)
+  #define DISPLAYED_ITEMS 4
+  #define SCROLL_STEP 3
+  #define BOXHEIGHT 32
+  #define BOXWIDTH 32
+  #define MARGIN 3
+  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
+  
+  #define MARGIN_LEFT 5
+  #define MARGIN_TOP 20
+  #define TITLE_HEIGHT 25
+  #define MINUTES_WIDTH 22
+#else
+#if defined(PBL_PLATFORM_DIORITE)
+  #define DISPLAYED_ITEMS 4
+  #define SCROLL_STEP 3
+  #define BOXHEIGHT 32
+  #define BOXWIDTH 32
+  #define MARGIN 3
+  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
+  
+  #define MARGIN_LEFT 5
+  #define MARGIN_TOP 20
+  #define TITLE_HEIGHT 25
+  #define MINUTES_WIDTH 22
+#else
+#if defined(PBL_PLATFORM_EMERY)
+  #define DISPLAYED_ITEMS 6
+  #define SCROLL_STEP 5
+  #define BOXHEIGHT 32
+  #define BOXWIDTH 32
+  #define MARGIN 3
+  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
+  
+  #define MARGIN_LEFT 5
+  #define MARGIN_TOP 20
+  #define TITLE_HEIGHT 25
+  #define MINUTES_WIDTH 22
+#else // PBL_PLATFORM_CHALK + default
+  #define DISPLAYED_ITEMS 4
+  #define SCROLL_STEP 3
+  #define BOXHEIGHT 32
+  #define BOXWIDTH 32
+  #define MARGIN 3
+  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
+  
+  #define MARGIN_LEFT 15
+  #define MARGIN_TOP 25
+  #define TITLE_HEIGHT 25
+  #define MINUTES_WIDTH 22
+#endif
+#endif
+#endif
+#endif
 
 // font
 #define FONT FONT_KEY_GOTHIC_24_BOLD
