@@ -2,9 +2,12 @@
 #include "show.h"
 #include "draw.h"
 #include "main_window.h"
+#include "scroll.h"
 #include "../data/stops.h"
 
 void show_next ( ) {
+
+  scroll_reset();
 
   ++ui_displayed_stop_index;
 
@@ -25,6 +28,8 @@ void show_next ( ) {
 
 void show_closest ( ) {
 
+  scroll_reset();
+  
   ui_displayed_stop_index = 0;
   
   if (data_stops_curr.length > 0) {

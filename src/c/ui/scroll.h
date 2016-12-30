@@ -5,3 +5,4 @@ int16_t get_scroll();
 void scroll_up();
 void scroll_down();
 void scroll_fix();
+void scroll_reset();

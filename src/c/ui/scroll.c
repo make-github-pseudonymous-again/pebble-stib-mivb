@@ -42,3 +42,7 @@ void scroll_fix(){
   }
 
 }
+
+void scroll_reset() {
+  s_scroll = 0;
+}
