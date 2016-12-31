@@ -5,6 +5,7 @@
 #include "scroll.h"
 
 void click_config_provider(Window *window) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[click] config_provider");
   window_single_click_subscribe(BUTTON_ID_SELECT, (ClickHandler) select_single_click_handler);
   window_long_click_subscribe(BUTTON_ID_SELECT, 0, (ClickHandler) select_long_click_handler, NULL);
   window_single_click_subscribe(BUTTON_ID_DOWN, (ClickHandler) down_single_click_handler);
@@ -13,26 +14,26 @@ void click_config_provider(Window *window) {
 }
 
 void select_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "single click select");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[click] single select");
   show_next();
 }
 
 void select_long_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "long click select");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[click] long select");
   load();
 }
 
 void down_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "single click down");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[click] single down");
   scroll_down();
 }
 
 void up_single_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "single click up");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[click] single up");
   scroll_up();
 }
 
 void select_double_click_handler(ClickRecognizerRef recognizer, Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "double click select");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[click] double select");
   show_closest();
 }

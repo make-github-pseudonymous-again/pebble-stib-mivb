@@ -71,6 +71,7 @@ int16_t get_main_window_title(){
 }
 
 void main_window_load(Window *window) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main_window] load");
 
   // Get information about the Window
   Layer *window_layer = window_get_root_layer(window);
@@ -113,6 +114,7 @@ void main_window_load(Window *window) {
   if (persist_exists(UI_DISPLAYED_STOP_ID_PERSIST_KEY)){
     ui_displayed_stop_id = persist_read_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY);
   }
+  Stops_read(&data_stops_curr);
 
   // Update display with cached information
   draw();
@@ -123,11 +125,14 @@ void main_window_load(Window *window) {
 }
 
 void main_window_unload(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_window_unload");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main_window] unload");
   clear();
   status_bar_layer_destroy(ui_status_bar);
   text_layer_destroy(ui_stop_name_layer);
   text_layer_destroy(ui_message_layer);
+  
   persist_write_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY, ui_displayed_stop_id);
-  // TODO cache ALL data on the watch
+  Stops_persist(&data_stops_curr);
+  Stops_clear(&data_stops_curr);
+  Stops_clear(&data_stops_recv);
 }

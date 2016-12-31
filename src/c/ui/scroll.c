@@ -11,18 +11,21 @@ int16_t get_scroll(){
 }
 
 void scroll_up(){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[scroll] up");
   --s_scroll;
   clear();
   draw();
 }
 
 void scroll_down(){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[scroll] down");
   ++s_scroll;
   clear();
   draw();
 }
 
 void scroll_fix(){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[scroll] fix");
 
   if (s_scroll < 0) s_scroll = 0;
   
@@ -44,5 +47,6 @@ void scroll_fix(){
 }
 
 void scroll_reset() {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[scroll] reset");
   s_scroll = 0;
 }

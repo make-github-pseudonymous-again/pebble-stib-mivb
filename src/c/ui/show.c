@@ -6,6 +6,7 @@
 #include "../data/stops.h"
 
 void show_next ( ) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[show] next");
 
   scroll_reset();
 
@@ -27,6 +28,7 @@ void show_next ( ) {
 }
 
 void show_closest ( ) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[show] closest");
 
   scroll_reset();
   

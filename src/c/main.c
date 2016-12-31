@@ -5,6 +5,7 @@
 #include "msg/outbox.h"
 
 static void init() {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main] init");
   // Create main window element and assign to pointer
   ui_main_window = window_create();
 
@@ -32,11 +33,13 @@ static void init() {
 }
 
 static void deinit() {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main] deinit");
   // Destroy Window
   window_destroy(ui_main_window);
 }
 
 int main(void) {
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main] main");
   init();
   app_event_loop();
   deinit();

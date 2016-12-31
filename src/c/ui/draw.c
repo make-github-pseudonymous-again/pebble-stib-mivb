@@ -114,7 +114,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
 
 void clear() {
   
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "clear");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] clear");
   
   Layer *window_layer = window_get_root_layer(ui_main_window);
   layer_remove_child_layers(window_layer);
@@ -132,7 +132,7 @@ void clear() {
 
 void handle_error ( const char* title , const char* message ) {
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "handle_error: %s %s", title, message);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] handle_error: %s %s", title, message);
 
   const time_t now = time(NULL);
   const time_t time_since_last_loaded_event = now - inbox_last_loaded_event_ts;

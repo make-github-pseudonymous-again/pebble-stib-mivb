@@ -20,3 +20,6 @@ Realtime* Realtime_create(
 );
 
 void Realtime_destroy(Realtime *realtime);
+
+status_t Realtime_write(const uint32_t *key, const Realtime *realtime);
+Realtime* Realtime_read(const uint32_t *key, const uint32_t stop_id);
