@@ -3,6 +3,7 @@
 #include "realtime.h"
 #include "../ds/dynamicarray.h"
 #include "../std/strdup.h"
+#include "../pebble/persist.h"
 
 Stop* Stop_create(
 	const uint32_t id,
@@ -46,7 +47,7 @@ void Stop_destroy(Stop *stop) {
 
 }
 
-status_t Stop_write(const uint32_t *key, const Stop *stop) {
+status_t Stop_persist_write(uint32_t *key, const Stop *stop) {
   status_t total = 0;
   status_t status;
   status = persist_write_int((*key)++, stop->id);
@@ -77,7 +78,7 @@ status_t Stop_write(const uint32_t *key, const Stop *stop) {
     
     Realtime *realtime = stop->realtime.data[j];
     
-    status = Realtime_write(&key, realtime);
+    status = Realtime_persist_write(key, realtime);
     if (status<0) return status;
     total += status;
     
@@ -86,7 +87,7 @@ status_t Stop_write(const uint32_t *key, const Stop *stop) {
   return total;
 }
 
-Stop* Stop_read(const uint32_t *key) {
+Stop* Stop_persist_read(uint32_t *key) {
 
 	Stop *stop = malloc(sizeof(Stop));
 
@@ -96,21 +97,38 @@ Stop* Stop_read(const uint32_t *key) {
   
   stop->id = persist_read_int((*key)++);
   
-  status = persist_read_string_trunc((*key)++, stop->name);
+  char *name = NULL;
+  status = persist_read_string_trunc((*key)++, name);
+  stop->name = name;
   
   stop->error = persist_read_int((*key)++);
   
-  stop->message = NULL; // default message
-  status = persist_read_string_trunc((*key)++, stop->message);
+  char *message = NULL; // default message
+  status = persist_read_string_trunc((*key)++, message);
+  stop->message = message;
 
   ds_DynamicArray_init(&stop->realtime, 1);
   
   const size_t m = persist_read_int((*key)++);
   
   for (size_t j = 0; j < m; ++j) {
-    Realtime *realtime = Realtime_read(&key, stop->id);
-    ds_DynamicArray_push(&stop->realtime, realtime);
+    Realtime *realtime = Realtime_persist_read(key, stop->id);
+    if (realtime == NULL) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "[stop] persist_read > failed to read realtime %lu at key %u of stop %u", j, *key, stop->id);
+      Realtime_persist_skip(key);
+    }
+    else {
+      ds_DynamicArray_push(&stop->realtime, realtime);
+    }
   }
 
 	return stop;
+}
+
+void Stop_persist_skip(uint32_t *key){
+  (*key)+=4;
+  const size_t m = persist_read_int((*key)++);
+  for (size_t j = 0; j < m; ++j) {
+    Realtime_persist_skip(key);
+  }
 }

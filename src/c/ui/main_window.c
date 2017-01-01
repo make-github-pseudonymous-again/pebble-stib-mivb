@@ -111,10 +111,8 @@ void main_window_load(Window *window) {
   ds_DynamicArray_init(&data_stops_recv, 1);
   
   // Load cached data
-  if (persist_exists(UI_DISPLAYED_STOP_ID_PERSIST_KEY)){
-    ui_displayed_stop_id = persist_read_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY);
-  }
-  Stops_read(&data_stops_curr);
+  ui_displayed_stop_id = persist_read_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY); // defaults to zero
+  thaw();
 
   // Update display with cached information
   draw();
@@ -132,7 +130,7 @@ void main_window_unload(Window *window) {
   text_layer_destroy(ui_message_layer);
   
   persist_write_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY, ui_displayed_stop_id);
-  Stops_persist(&data_stops_curr);
+  freeze();
   Stops_clear(&data_stops_curr);
   Stops_clear(&data_stops_recv);
 }

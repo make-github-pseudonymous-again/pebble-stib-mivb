@@ -19,5 +19,6 @@ Stop* Stop_create(
 
 void Stop_destroy(Stop *stop);
 
-status_t Stop_write(const uint32_t *key, const Stop *stop);
-Stop* Stop_read(const uint32_t *key);
+status_t Stop_persist_write(uint32_t *key, const Stop *stop);
+Stop* Stop_persist_read(uint32_t *key);
+void Stop_persist_skip(uint32_t *key);

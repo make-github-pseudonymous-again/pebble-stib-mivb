@@ -2,72 +2,31 @@
 #include <pebble.h>
 #include "when.h"
 
-// TODO make those dimensions depend on the watch model
-#if defined(PBL_PLATFORM_APLITE)
-  #define DISPLAYED_ITEMS 4
-  #define SCROLL_STEP 3
-  #define BOXHEIGHT 32
-  #define BOXWIDTH 32
-  #define MARGIN 3
-  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
-  
-  #define MARGIN_LEFT 5
-  #define MARGIN_TOP 20
-  #define TITLE_HEIGHT 25
-  #define MINUTES_WIDTH 22
-#else
-#if defined(PBL_PLATFORM_BASALT)
-  #define DISPLAYED_ITEMS 4
-  #define SCROLL_STEP 3
-  #define BOXHEIGHT 32
-  #define BOXWIDTH 32
-  #define MARGIN 3
-  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
-  
-  #define MARGIN_LEFT 5
-  #define MARGIN_TOP 20
-  #define TITLE_HEIGHT 25
-  #define MINUTES_WIDTH 22
-#else
-#if defined(PBL_PLATFORM_DIORITE)
-  #define DISPLAYED_ITEMS 4
-  #define SCROLL_STEP 3
-  #define BOXHEIGHT 32
-  #define BOXWIDTH 32
-  #define MARGIN 3
-  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
-  
-  #define MARGIN_LEFT 5
-  #define MARGIN_TOP 20
-  #define TITLE_HEIGHT 25
-  #define MINUTES_WIDTH 22
-#else
+#define DISPLAYED_ITEMS 4
+#define SCROLL_STEP 3
+#define MARGIN_LEFT 5
+#define MARGIN_TOP 20
+#define BOXHEIGHT 32
+#define BOXWIDTH BOXHEIGHT
+#define MARGIN 3
+#define LINEHEIGHT (BOXHEIGHT + MARGIN)
+#define TITLE_HEIGHT 25
+#define MINUTES_WIDTH 22
+
+// platform-specific overrides
 #if defined(PBL_PLATFORM_EMERY)
+  // big screen: display more items
+  #undef DISPLAYED_ITEMS
+  #undef SCROLL_STEP
   #define DISPLAYED_ITEMS 6
   #define SCROLL_STEP 5
-  #define BOXHEIGHT 32
-  #define BOXWIDTH 32
-  #define MARGIN 3
-  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
-  
-  #define MARGIN_LEFT 5
-  #define MARGIN_TOP 20
-  #define TITLE_HEIGHT 25
-  #define MINUTES_WIDTH 22
-#else // PBL_PLATFORM_CHALK + default
-  #define DISPLAYED_ITEMS 4
-  #define SCROLL_STEP 3
-  #define BOXHEIGHT 32
-  #define BOXWIDTH 32
-  #define MARGIN 3
-  #define LINEHEIGHT (BOXHEIGHT + MARGIN)
-  
+#else
+#if defined(PBL_PLATFORM_CHALK)
+  // round screen: adapt margins
+  #undef MARGIN_LEFT
+  #undef MARGIN_TOP
   #define MARGIN_LEFT 15
   #define MARGIN_TOP 25
-  #define TITLE_HEIGHT 25
-  #define MINUTES_WIDTH 22
-#endif
-#endif
 #endif
 #endif
 

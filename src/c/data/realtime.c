@@ -1,6 +1,7 @@
 #include <pebble.h>
 #include "realtime.h"
 #include "../std/strdup.h"
+#include "../pebble/persist.h"
 
 Realtime* Realtime_create(
 	const uint32_t stop_id,
@@ -36,7 +37,7 @@ void Realtime_destroy(Realtime *realtime) {
 }
 
 
-status_t Realtime_write(const uint32_t *key, const Realtime *realtime){
+status_t Realtime_persist_write(uint32_t *key, const Realtime *realtime){
   status_t total = 0;
   status_t status;
   // writing stop_id is silly
@@ -62,7 +63,7 @@ status_t Realtime_write(const uint32_t *key, const Realtime *realtime){
   return total;
 }
 
-Realtime* Realtime_read(const uint32_t *key, const uint32_t stop_id) {
+Realtime* Realtime_persist_read(uint32_t *key, const uint32_t stop_id) {
 
 	Realtime *realtime = malloc(sizeof(Realtime));
 
@@ -72,11 +73,19 @@ Realtime* Realtime_read(const uint32_t *key, const uint32_t stop_id) {
   
   realtime->stop_id = stop_id; // instead of reading it
   
-  status = persist_read_string_trunc((*key)++, realtime->line_number);
-  status = persist_read_string_trunc((*key)++, realtime->destination_name);
-  stop->foreground_color = persist_read_int((*key)++);
-  stop->background_color = persist_read_int((*key)++);
-  stop->utc = persist_read_int((*key)++);
+  char *line_number = NULL;
+  status = persist_read_string_trunc((*key)++, line_number);
+  realtime->line_number = line_number;
+  char *destination_name = NULL;
+  status = persist_read_string_trunc((*key)++, destination_name);
+  realtime->destination_name = destination_name;
+  realtime->foreground_color = persist_read_int((*key)++);
+  realtime->background_color = persist_read_int((*key)++);
+  realtime->utc = persist_read_int((*key)++);
 
 	return realtime;
+}
+
+void Realtime_persist_skip(uint32_t *key){
+  (*key)+=5;
 }
