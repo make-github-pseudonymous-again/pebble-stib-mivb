@@ -1,7 +1,24 @@
 {
     "author": "aurelien.ooms@gmail.com",
     "dependencies": {},
-    "keywords": [],
+    "keywords": [
+        "stib",
+        "mivb",
+        "bruxelles",
+        "brussel",
+        "brussels",
+        "bus",
+        "tram",
+        "metro",
+        "premetro",
+        "schedule",
+        "real",
+        "time",
+        "realtime",
+        "closest",
+        "stops",
+        "lines"
+    ],
     "name": "stib-mivb",
     "pebble": {
         "capabilities": [
@@ -42,5 +59,5 @@
             "watchface": false
         }
     },
-    "version": "1.0.0"
+    "version": "1.1.0"
 }
