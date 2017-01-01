@@ -100,7 +100,8 @@ Stop* Stop_persist_read(uint32_t *key) {
   char *name = NULL;
   status = persist_read_string_trunc((*key)++, &name);
   if (status < 0){
-      APP_LOG(APP_LOG_LEVEL_WARNING, "[stop] persist_read > failed to read stop->name at key %lu of stop %lu", *key-1, stop->id);
+    const char *msg = "[stop] persist_read > failed to read stop->name at key %lu of stop %lu";
+    APP_LOG(APP_LOG_LEVEL_WARNING, msg, *key-1, stop->id);
   }
   stop->name = name;
   
@@ -109,7 +110,8 @@ Stop* Stop_persist_read(uint32_t *key) {
   char *message = NULL; // default message
   status = persist_read_string_trunc((*key)++, &message);
   if (status < 0){
-      APP_LOG(APP_LOG_LEVEL_WARNING, "[stop] persist_read > failed to read stop->message at key %lu of stop %lu", *key-1, stop->id);
+    const char *msg = "[stop] persist_read > failed to read stop->message at key %lu of stop %lu";
+    APP_LOG(APP_LOG_LEVEL_WARNING, msg, *key-1, stop->id);
   }
   stop->message = message;
 
@@ -120,7 +122,8 @@ Stop* Stop_persist_read(uint32_t *key) {
   for (size_t j = 0; j < m; ++j) {
     Realtime *realtime = Realtime_persist_read(key, stop->id);
     if (realtime == NULL) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "[stop] persist_read > failed to read realtime %u at key %lu of stop %lu", j, *key, stop->id);
+      const char *msg = "[stop] persist_read > failed to read realtime %u at key %lu of stop %lu";
+      APP_LOG(APP_LOG_LEVEL_ERROR, msg, j, *key, stop->id);
       Realtime_persist_skip(key);
     }
     else {

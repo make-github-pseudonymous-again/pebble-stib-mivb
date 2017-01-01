@@ -5,7 +5,7 @@
 #include "click.h"
 #include "../data/stops.h"
 #include "../ds/dynamicarray.h"
-
+#include "../pebble/translate_error.h"
 
 // initialized once, deleted on app kill
 Window *ui_main_window = NULL;
@@ -71,7 +71,7 @@ int16_t get_main_window_title(){
 }
 
 void main_window_load(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main_window] load");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_window_load");
 
   // Get information about the Window
   Layer *window_layer = window_get_root_layer(window);
@@ -111,7 +111,6 @@ void main_window_load(Window *window) {
   ds_DynamicArray_init(&data_stops_recv, 1);
   
   // Load cached data
-  ui_displayed_stop_id = persist_read_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY); // defaults to zero
   thaw();
 
   // Update display with cached information
@@ -123,14 +122,60 @@ void main_window_load(Window *window) {
 }
 
 void main_window_unload(Window *window) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[main_window] unload");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "main_window_unload");
   clear();
   status_bar_layer_destroy(ui_status_bar);
   text_layer_destroy(ui_stop_name_layer);
   text_layer_destroy(ui_message_layer);
   
-  persist_write_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY, ui_displayed_stop_id);
   freeze();
   Stops_clear(&data_stops_curr);
   Stops_clear(&data_stops_recv);
+}
+
+status_t freeze(){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "freeze");
+  persist_write_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY, ui_displayed_stop_id);
+  uint32_t key = STOPS_PERSIST_KEY_BEGIN;
+  status_t status = Stops_persist_write(&key, &data_stops_curr);
+  if (status > 0){
+    APP_LOG(APP_LOG_LEVEL_DEBUG, "freeze > wrote %ld bytes", status);
+  }
+  else{
+    APP_LOG(APP_LOG_LEVEL_ERROR, "freeze > catched %s", pebble_translate_status_error(status));
+  }
+  return status;
+}
+
+uint32_t thaw(){
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "thaw");
+  
+  ui_displayed_stop_id = persist_read_int(UI_DISPLAYED_STOP_ID_PERSIST_KEY); // defaults to zero
+  
+  uint32_t key = STOPS_PERSIST_KEY_BEGIN;
+  const uint32_t end = Stops_persist_read(&key, &data_stops_curr);
+  // seems to be slow and unnecessary
+  // Stops_persist_clear(STOPS_PERSIST_KEY_BEGIN, end); // clean up
+  
+  update_displayed_stop_index();
+  return end;
+}
+
+void update_displayed_stop_index(){
+  ui_displayed_stop_index = 0; // default: show closest
+  const size_t n = data_stops_curr.length;
+  for (size_t i = 0 ; i < n ; ++i){
+    Stop *stop = data_stops_curr.data[i];
+    if (stop->id == ui_displayed_stop_id) {
+      ui_displayed_stop_index = i;
+      break;
+    }
+  }
+}
+
+void update_displayed_stop_id(){
+  if (data_stops_curr.length > 0) {
+    Stop *stop = data_stops_curr.data[ui_displayed_stop_index];
+    ui_displayed_stop_id = stop->id;
+  }
 }

@@ -1,9 +1,8 @@
 #include <pebble.h>
 #include "stops.h"
-#include "../ds/dynamicarray.h"
 #include "stop.h"
-
-#define STOPS_PERSIST_KEY_BEGIN 1
+#include "../ds/dynamicarray.h"
+#include "../pebble/translate_error.h"
 
 ds_DynamicArray data_stops_curr;
 ds_DynamicArray data_stops_recv;
@@ -44,10 +43,11 @@ status_t Stops_persist_write(uint32_t *key, const ds_DynamicArray *stops){
   status_t status;
   
   const size_t n = stops->length;
+  const uint32_t n_pos = *key;
   
   status = persist_write_int((*key)++, n);
   if (status<0) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop count %u, error %ld", n, status);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop count %u, error %s", n, pebble_translate_status_error(status));
     return status;
   }
   total += status;
@@ -58,8 +58,9 @@ status_t Stops_persist_write(uint32_t *key, const ds_DynamicArray *stops){
     const uint32_t begin = *key;
     status = Stop_persist_write(key, stop);
     if (status<0) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop %u, error %ld", i, status);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop %u, error %s", i, pebble_translate_status_error(status));
       Stops_persist_clear(begin, *key);
+      persist_write_int(n_pos, i); // overwrite number of items
       return status;
     }
     total += status;
@@ -90,23 +91,7 @@ void Stops_persist_clear(const uint32_t lo, const uint32_t hi){
   for (uint32_t key = lo; key < hi; ++key){
     status_t status = persist_delete(key);
     if (status<0) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to delete key %lu, error %ld", key, status);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to delete key %lu, error %s", key, pebble_translate_status_error(status));
     }
   } 
-}
-
-
-uint32_t freeze(){
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] freeze");
-  uint32_t key = STOPS_PERSIST_KEY_BEGIN;
-  return Stops_persist_write(&key, &data_stops_curr);
-}
-
-uint32_t thaw(){
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] thaw");
-  uint32_t key = STOPS_PERSIST_KEY_BEGIN;
-  const uint32_t end = Stops_persist_read(&key, &data_stops_curr);
-  // seems to be slow and unnecessary
-  // Stops_persist_clear(STOPS_PERSIST_KEY_BEGIN, end); // clean up
-  return end;
 }

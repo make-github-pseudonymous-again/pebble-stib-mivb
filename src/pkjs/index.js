@@ -20,7 +20,6 @@ var VAL_STATE_LOADED_GEOERROR = 2 ;
 var VAL_STATE_LOADED_ERROR = 3 ;
 var VAL_STATE_RECV = 4 ;
 
-var TIMESTAMP = 0 ;
 var POLLRATE = 30000 ;
 
 var TIMEOUT = null;
@@ -31,10 +30,10 @@ var QUEUE = messagequeue.create();
 
 var DEFAULT_STATE = {
 	lat : undefined ,
-	lon : undefined ,
-	realtime : undefined ,
-	stop_id : undefined
+	lon : undefined
 } ;
+
+var REALTIME = null;
 
 var STATE = state.create(DEFAULT_STATE);
 
@@ -80,12 +79,10 @@ function loadsuccess (req, cb, geoerror, quiet) {
       if ( cb ) cb() ;
       return;
     }
-    STATE.data.realtime = response;
-    STATE.freeze();
+    REALTIME = response;
     send_state(VAL_STATE_RECV);
     send_realtime();
     send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
-    TIMESTAMP = Date.now();
     TIMEOUT = setTimeout( load , POLLRATE ) ;
     if ( cb ) cb() ;
   } ;
@@ -148,7 +145,7 @@ function send_realtime ( ) {
 	// });
 	++UUID_SEND_REALTIME;
 	UUID_SEND_REALTIME|=0;
-	var stops = STATE.data.realtime.stops ;
+	var stops = REALTIME.stops ;
 	var n = stops.length ;
   if (n < 1) {
     console.log('[send_realtime] nothing to send');

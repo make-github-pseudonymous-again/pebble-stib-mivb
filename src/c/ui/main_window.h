@@ -48,6 +48,14 @@ extern TextLayer *ui_line_number_layer[DISPLAYED_ITEMS];
 extern TextLayer *ui_destination_name_layer[DISPLAYED_ITEMS];
 extern TextLayer *ui_minutes_layer[DISPLAYED_ITEMS];
 
+// freeze/thaw app state
+status_t freeze();
+uint32_t thaw();
+
+// functions to update displayed stop id/index
+void update_displayed_stop_id();
+void update_displayed_stop_index();
+
 // load and unload handlers for main window
 void main_window_load(Window *window);
 void main_window_unload(Window *window);

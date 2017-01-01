@@ -125,19 +125,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       ds_DynamicArray_swap(&data_stops_curr, &data_stops_recv);
       
       // search for most recently displayed stop
-      ui_displayed_stop_index = 0; // default: show closest
-      const size_t n = data_stops_curr.length;
-      for (size_t i = 0 ; i < n ; ++i){
-        Stop *stop = data_stops_curr.data[i];
-        if (stop->id == ui_displayed_stop_id) {
-          ui_displayed_stop_index = i;
-          break;
-        }
-      }
-      if (n > 0) {
-        Stop *stop = data_stops_curr.data[ui_displayed_stop_index];
-        ui_displayed_stop_id = stop->id;
-      }
+      update_displayed_stop_index();
+      update_displayed_stop_id();
 
       clear();
       draw();
@@ -181,5 +170,5 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 }
 
 void inbox_dropped_callback(AppMessageResult reason, void *context) {
-  APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Message dropped: %i - %s", reason, pebble_translate_error(reason));
+  APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Message dropped: %i - %s", reason, pebble_translate_app_message_error(reason));
 }
