@@ -75,8 +75,8 @@ void draw_realtime_item(bool quiet, Layer* root, const time_t now, const size_t 
 
   char *minutes_buffer = ui_minutes_buffer[i];
   
-  quiet = quiet && (i != 0); // if first item on the list, vibrate if close or gone
-  GColor when_color = when(minutes_buffer, now, realtime->utc, quiet) ;
+  quiet = quiet || (i != 0); // if first item on the list, vibrate if close or gone
+  GColor when_color = when(quiet, minutes_buffer, now, realtime->utc) ;
 
   const int16_t offset = i*LINEHEIGHT;
   const int16_t l = get_main_window_left();

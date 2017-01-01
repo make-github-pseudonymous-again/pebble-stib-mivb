@@ -8,7 +8,7 @@ const char *WHEN_IN_MORE_THAN_100_MINUTES = ">99";
 const char *WHEN_GONE = ":(";
 const char *WHEN_NOW = "0";
 
-GColor when ( char* buffer, const time_t now, const time_t expected_arrival, bool quiet ) {
+GColor when (bool quiet, char* buffer, const time_t now, const time_t expected_arrival) {
   
 	// The +5 is to account for data transmission
 	// and code execution between data retrieval and display.

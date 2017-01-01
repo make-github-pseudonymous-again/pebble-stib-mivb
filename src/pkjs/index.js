@@ -83,7 +83,7 @@ function loadsuccess (req, cb, geoerror, quiet) {
     send_state(VAL_STATE_RECV);
     send_realtime(quiet);
     send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
-    TIMEOUT = setTimeout(load, POLLRATE, null, false) ;
+    TIMEOUT = setTimeout(load.bind(null, null, false), POLLRATE) ;
     if ( cb ) cb() ;
   } ;
 }

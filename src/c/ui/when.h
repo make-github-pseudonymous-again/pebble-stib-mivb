@@ -8,4 +8,4 @@ extern const char *WHEN_IN_MORE_THAN_100_MINUTES;
 extern const char *WHEN_GONE;
 extern const char *WHEN_NOW;
 
-GColor when ( char *buffer, const time_t now, const time_t expected_arrival, bool quiet ) ;
+GColor when ( bool quiet, char *buffer, const time_t now, const time_t expected_arrival ) ;
