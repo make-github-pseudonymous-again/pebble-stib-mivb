@@ -9,7 +9,7 @@ ds_DynamicArray data_stops_curr;
 ds_DynamicArray data_stops_recv;
 
 Stop* get_stop(const ds_DynamicArray *stops, const uint32_t stop_id) {
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] get_stop(%p,%u)", stops, stop_id);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] get_stop(%p,%lu)", stops, stop_id);
   
   const size_t n = stops->length;
 
@@ -47,7 +47,7 @@ status_t Stops_persist_write(uint32_t *key, const ds_DynamicArray *stops){
   
   status = persist_write_int((*key)++, n);
   if (status<0) {
-    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop count %lu, error %d", n, status);
+    APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop count %u, error %ld", n, status);
     return status;
   }
   total += status;
@@ -58,7 +58,7 @@ status_t Stops_persist_write(uint32_t *key, const ds_DynamicArray *stops){
     const uint32_t begin = *key;
     status = Stop_persist_write(key, stop);
     if (status<0) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop %lu, error %d", i, status);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to write stop %u, error %ld", i, status);
       Stops_persist_clear(begin, *key);
       return status;
     }
@@ -75,7 +75,7 @@ uint32_t Stops_persist_read(uint32_t *key, ds_DynamicArray *stops){
   for (size_t i = 0; i < n; ++i){
     Stop *stop = Stop_persist_read(key);
     if (stop == NULL) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "[stop] persist_read > failed to read stop %lu at key %u", i, *key);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "[stop] persist_read > failed to read stop %u at key %lu", i, *key);
       Stop_persist_skip(key);
     }
     else {
@@ -86,11 +86,11 @@ uint32_t Stops_persist_read(uint32_t *key, ds_DynamicArray *stops){
 }
 
 void Stops_persist_clear(const uint32_t lo, const uint32_t hi){
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] clear(%u, %u)", lo, hi);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] clear(%lu, %lu)", lo, hi);
   for (uint32_t key = lo; key < hi; ++key){
     status_t status = persist_delete(key);
-    if (status != S_SUCCESS) {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to delete key %u, error %d", key, status);
+    if (status<0) {
+      APP_LOG(APP_LOG_LEVEL_ERROR, "Failed to delete key %lu, error %ld", key, status);
     }
   } 
 }
@@ -105,5 +105,8 @@ uint32_t freeze(){
 uint32_t thaw(){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "[stops] thaw");
   uint32_t key = STOPS_PERSIST_KEY_BEGIN;
-  return Stops_persist_read(&key, &data_stops_curr);
+  const uint32_t end = Stops_persist_read(&key, &data_stops_curr);
+  // seems to be slow and unnecessary
+  // Stops_persist_clear(STOPS_PERSIST_KEY_BEGIN, end); // clean up
+  return end;
 }

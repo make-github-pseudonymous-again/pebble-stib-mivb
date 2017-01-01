@@ -74,10 +74,16 @@ Realtime* Realtime_persist_read(uint32_t *key, const uint32_t stop_id) {
   realtime->stop_id = stop_id; // instead of reading it
   
   char *line_number = NULL;
-  status = persist_read_string_trunc((*key)++, line_number);
+  status = persist_read_string_trunc((*key)++, &line_number);
+  if (status < 0){
+      APP_LOG(APP_LOG_LEVEL_WARNING, "[realtime] persist_read > failed to read realtime->line_number at key %lu with stop_id=%lu", *key-1, stop_id);
+  }
   realtime->line_number = line_number;
   char *destination_name = NULL;
-  status = persist_read_string_trunc((*key)++, destination_name);
+  status = persist_read_string_trunc((*key)++, &destination_name);
+  if (status < 0){
+      APP_LOG(APP_LOG_LEVEL_WARNING, "[realtime] persist_read > failed to read realtime->destination_name at key %lu with stop_id=%lu", *key-1, stop_id);
+  }
   realtime->destination_name = destination_name;
   realtime->foreground_color = persist_read_int((*key)++);
   realtime->background_color = persist_read_int((*key)++);
