@@ -8,7 +8,8 @@ const char *WHEN_IN_MORE_THAN_100_MINUTES = ">99";
 const char *WHEN_GONE = ":(";
 const char *WHEN_NOW = "0";
 
-GColor when ( char* buffer, const time_t now, const time_t expected_arrival ) {
+GColor when ( char* buffer, const time_t now, const time_t expected_arrival, bool quiet ) {
+  
 	// The +5 is to account for data transmission
 	// and code execution between data retrieval and display.
 	// Should probably send the time of retrieval to avoid
@@ -18,10 +19,12 @@ GColor when ( char* buffer, const time_t now, const time_t expected_arrival ) {
 	APP_LOG(APP_LOG_LEVEL_DEBUG, "%ld %ld %ld", expected_arrival , now , seconds);
 
 	if ( seconds < WHEN_GONE_THRESHOLD ) {
+    if (!quiet) vibes_double_pulse();
 		strcpy(buffer, WHEN_GONE);
 		return GColorPurple ;
 	}
-	else if  ( seconds < 0 ) {
+	else if  ( seconds < 60 ) {
+    if (!quiet) vibes_double_pulse();
 		strcpy(buffer, WHEN_NOW);
 		return GColorFolly ;
 	}
@@ -29,7 +32,7 @@ GColor when ( char* buffer, const time_t now, const time_t expected_arrival ) {
 		strcpy(buffer, WHEN_IN_MORE_THAN_100_MINUTES);
 		return GColorDarkGray ;
 	}
-	else {
+	else { // 60 <= seconds < 6000
 		snprintf(buffer, WHEN_BUFFER_SIZE, "%ld", seconds / 60);
 		return GColorDarkGray ;
 	}
