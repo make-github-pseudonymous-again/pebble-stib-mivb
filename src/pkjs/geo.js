@@ -24,7 +24,7 @@ Geo.prototype.onsuccess = function ( position ) {
 Geo.prototype.onfailure = function () {
 	console.log( 'geofail' ) ;
 	this.error = 'could not load geolocation :(';
-	this.cb();
+	this.cb(false);
 } ;
 
 Geo.prototype.start = function () {

@@ -9,9 +9,9 @@
 #include "../data/stops.h"
 #include "../msg/inbox.h"
 
-void draw_from_time(const time_t now) {
+void draw_from_time(bool quiet, const time_t now) {
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] draw_from_time(%ld)", now);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "draw_from_time(%s, %ld)", quiet ? "true" : "false", now);
 
   scroll_fix();
 
@@ -53,7 +53,7 @@ void draw_from_time(const time_t now) {
       if ( j == displayed_stop->realtime.length ) break ;
 
       Realtime* realtime = displayed_stop->realtime.data[j] ;
-      draw_realtime_item(window_layer, now, i, realtime);
+      draw_realtime_item(quiet, window_layer, now, i, realtime);
 
     }
 
@@ -61,21 +61,21 @@ void draw_from_time(const time_t now) {
 
 }
 
-void draw_from_tm(struct tm *tick_time) {
+void draw_from_tm(bool quiet, struct tm *tick_time) {
   const time_t now = mktime(tick_time);
-  draw_from_time(now);
+  draw_from_time(quiet, now);
 }
 
-void draw() {
+void draw(bool quiet) {
   const time_t now = time(NULL);
-  draw_from_time(now);
+  draw_from_time(quiet, now);
 }
 
-void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Realtime* realtime){
+void draw_realtime_item(bool quiet, Layer* root, const time_t now, const size_t i, const Realtime* realtime){
 
   char *minutes_buffer = ui_minutes_buffer[i];
   
-  bool quiet = (i != 0); // if first item on the list, vibrate if close or gone
+  quiet = quiet && (i != 0); // if first item on the list, vibrate if close or gone
   GColor when_color = when(minutes_buffer, now, realtime->utc, quiet) ;
 
   const int16_t offset = i*LINEHEIGHT;
@@ -116,7 +116,7 @@ void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Rea
 
 void clear() {
   
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] clear");
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "clear");
   
   Layer *window_layer = window_get_root_layer(ui_main_window);
   layer_remove_child_layers(window_layer);
@@ -134,7 +134,7 @@ void clear() {
 
 void handle_error ( const char* title , const char* message ) {
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[draw] handle_error: %s %s", title, message);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "handle_error: %s %s", title, message);
 
   const time_t now = time(NULL);
   const time_t time_since_last_loaded_event = now - inbox_last_loaded_event_ts;

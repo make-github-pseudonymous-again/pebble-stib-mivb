@@ -14,14 +14,14 @@ void scroll_up(){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "[scroll] up");
   --s_scroll;
   clear();
-  draw();
+  draw(true);
 }
 
 void scroll_down(){
   APP_LOG(APP_LOG_LEVEL_DEBUG, "[scroll] down");
   ++s_scroll;
   clear();
-  draw();
+  draw(true);
 }
 
 void scroll_fix(){

@@ -5,10 +5,10 @@
 // KO timeout
 #define TKO 60000
 
-void draw();
-void draw_from_tm(struct tm *tick_time);
-void draw_from_time(const time_t now);
-void draw_realtime_item(Layer* root, const time_t now, const size_t i, const Realtime* realtime);
+void draw(bool quiet);
+void draw_from_tm(bool quiet, struct tm *tick_time);
+void draw_from_time(bool quiet, const time_t now);
+void draw_realtime_item(bool quiet, Layer* root, const time_t now, const size_t i, const Realtime* realtime);
 
 void clear();
 

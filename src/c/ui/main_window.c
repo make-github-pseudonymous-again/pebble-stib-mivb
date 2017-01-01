@@ -114,7 +114,7 @@ void main_window_load(Window *window) {
   thaw();
 
   // Update display with cached information
-  draw();
+  draw(true);
 
   // Register click events
   window_set_click_config_provider(window, (ClickConfigProvider) click_config_provider);

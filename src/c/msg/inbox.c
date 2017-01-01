@@ -28,7 +28,7 @@ static uint32_t s_uuid_send_realtime;
 void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   int size = (int)iterator->end - (int)iterator->dictionary;
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "[inbox] Received %d bytes", size);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "inbox_received_callback Received %d bytes", size);
 
   const uint32_t type = dict_find(iterator, MESSAGE_KEY_TYPE)->value->uint32;
   switch (type) {
@@ -39,13 +39,13 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
       if ( uuid_run < s_uuid_run || ( uuid_run == s_uuid_run && uuid_send_realtime < s_uuid_send_realtime ) ) {
       	// this should  never happen
-      	APP_LOG(APP_LOG_LEVEL_ERROR, "received old realtime message");
+      	APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Received old realtime message");
       	break;
       }
 
       if ( uuid_run > s_uuid_run || uuid_send_realtime > s_uuid_send_realtime ) {
       	// we are receiving new realtime data, drop old
-      	APP_LOG(APP_LOG_LEVEL_DEBUG, "receiving new realtime data");
+      	APP_LOG(APP_LOG_LEVEL_DEBUG, "inbox_received_callback Receiving new realtime data");
       	s_uuid_run = uuid_run;
       	s_uuid_send_realtime = uuid_send_realtime;
       	Stops_clear(&data_stops_recv);
@@ -77,7 +77,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
       if ( uuid_run != s_uuid_run || uuid_send_realtime != s_uuid_send_realtime ) {
       	// this should  never happen
-      	APP_LOG(APP_LOG_LEVEL_ERROR, "received wrong realtime uuid");
+      	APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Received wrong realtime uuid");
       	break;
       }
 
@@ -101,7 +101,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
       if ( stop == NULL ) {
       	// this should  never happen
-      	APP_LOG(APP_LOG_LEVEL_ERROR, "stop object %lu missing", stop_id);
+      	APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Stop object %lu missing", stop_id);
       	break;
       }
 
@@ -112,10 +112,11 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
       const uint32_t uuid_run = dict_find(iterator, MESSAGE_KEY_UUID_RUN)->value->uint32;
       const uint32_t uuid_send_realtime = dict_find(iterator, MESSAGE_KEY_UUID_SEND_REALTIME)->value->uint32;
+      const bool quiet = dict_find(iterator, MESSAGE_KEY_REALTIME_QUIET)->value->uint8;
 
       if ( uuid_run != s_uuid_run || uuid_send_realtime != s_uuid_send_realtime ) {
       	// this should  never happen
-      	APP_LOG(APP_LOG_LEVEL_ERROR, "received wrong realtime uuid");
+      	APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Received wrong realtime uuid");
       	break;
       }
       
@@ -129,7 +130,7 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       update_displayed_stop_id();
 
       clear();
-      draw();
+      draw(quiet);
       Stops_clear(&data_stops_recv);
       break;
     }
@@ -158,17 +159,17 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
       	  break;
         }
         default: {
-          APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown state %lu", state);
+          APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Unknown state %lu", state);
         }
       }
       break;
     }
     default: {
-      APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Unknown type %lu", type);
+      APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Unknown type %lu", type);
     }
   }
 }
 
 void inbox_dropped_callback(AppMessageResult reason, void *context) {
-  APP_LOG(APP_LOG_LEVEL_ERROR, "[inbox] Message dropped: %i - %s", reason, pebble_translate_app_message_error(reason));
+  APP_LOG(APP_LOG_LEVEL_ERROR, "inbox_received_callback Message dropped: %i - %s", reason, pebble_translate_app_message_error(reason));
 }

@@ -40,7 +40,8 @@
             "REALTIME_BACKGROUND_COLOR",
             "REALTIME_UTC",
             "REALTIME_STOP_ERROR",
-            "REALTIME_STOP_MESSAGE"
+            "REALTIME_STOP_MESSAGE",
+            "REALTIME_QUIET"
         ],
         "projectType": "native",
         "resources": {

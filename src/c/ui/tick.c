@@ -5,5 +5,5 @@
 void tick_handler(struct tm *tick_time, TimeUnits units_changed) {
   APP_LOG(APP_LOG_LEVEL_DEBUG, "[tick] handler");
   clear();
-  draw_from_tm(tick_time);
+  draw_from_tm(false, tick_time);
 }

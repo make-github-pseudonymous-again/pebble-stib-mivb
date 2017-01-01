@@ -20,7 +20,7 @@ void show_next ( ) {
   update_displayed_stop_id();
 
   clear();
-  draw();
+  draw(true);
 
 }
 
@@ -34,6 +34,6 @@ void show_closest ( ) {
   update_displayed_stop_id();
   
   clear();
-  draw();
+  draw(true);
 
 }

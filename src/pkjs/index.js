@@ -42,7 +42,7 @@ var GEO = geo.create( function ( should_update ) {
   STATE.data.lat = GEO.lat ;
   STATE.data.lon = GEO.lon ;
   STATE.freeze();
-  if ( should_update || TIMEOUT === null ) load( ) ;
+  if ( should_update || TIMEOUT === null ) load(null, true);
 });
 
 // REALTIME
@@ -81,9 +81,9 @@ function loadsuccess (req, cb, geoerror, quiet) {
     }
     REALTIME = response;
     send_state(VAL_STATE_RECV);
-    send_realtime();
+    send_realtime(quiet);
     send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
-    TIMEOUT = setTimeout( load , POLLRATE ) ;
+    TIMEOUT = setTimeout(load, POLLRATE, null, false) ;
     if ( cb ) cb() ;
   } ;
 }
@@ -138,7 +138,7 @@ function send_state ( state ) {
 	QUEUE.send( packet );
 }
 
-function send_realtime ( ) {
+function send_realtime ( quiet ) {
   console.log('send_realtime');
 	// QUEUE.withdraw( function( packet ) {
 	//	 return packet.TYPE === VAL_TYPE_REALTIME && packet.UUID_SEND_REALTIME <= UUID_SEND_REALTIME
@@ -197,6 +197,7 @@ function send_realtime ( ) {
 		'TYPE': VAL_TYPE_REALTIME_END, // 8 bits -> uint32
 		'UUID_RUN': UUID_RUN, // int -> uint32
 		'UUID_SEND_REALTIME': UUID_SEND_REALTIME, // int -> uint32
+    'REALTIME_QUIET': quiet, // bool -> uint8
 	} ;
 
 	QUEUE.send( endpacket ); // means "now is a good time to refresh the screen"
@@ -208,12 +209,12 @@ function send_realtime ( ) {
 Pebble.addEventListener('ready', function(e) {
 	UUID_RUN = (Date.now() / 1000)|0 ;
 	STATE.thaw();
-	if ( STATE.data.lat !== undefined && STATE.data.lon !== undefined ) load( GEO.start.bind(GEO) );
+	if ( STATE.data.lat !== undefined && STATE.data.lon !== undefined ) load( GEO.start.bind(GEO), false);
 	else GEO.start();
 });
 
 // Listen for when an AppMessage is received
 Pebble.addEventListener('appmessage', function(e) {
-  console.log('AppMessage received!');
+  console.log('Received update request');
   load(null, true);
 });
