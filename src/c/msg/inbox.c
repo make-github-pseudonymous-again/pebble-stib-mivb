@@ -19,7 +19,7 @@
 #define VAL_STATE_LOADED_ERROR 3
 #define VAL_STATE_RECV 4
 
-time_t inbox_last_loaded_event_ts;
+//time_t inbox_last_loaded_event_ts = 0;
 
 // used to keep track of last received message
 static uint32_t s_uuid_run;

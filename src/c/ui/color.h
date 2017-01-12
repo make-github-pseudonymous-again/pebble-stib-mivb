@@ -9,6 +9,8 @@
 #define FKO GColorWhite
 #define BNG GColorChromeYellow
 #define FNG GColorWhite
+#define BNP GColorPurpureus
+#define FNP GColorWhite
 #define BRC GColorVividCerulean
 #define FRC GColorWhite
 #define BG GColorWhite
