@@ -19,9 +19,14 @@ void draw_from_time(bool quiet, const time_t now) {
   
   // add status bar
   layer_add_child(window_layer, status_bar_layer_get_layer(ui_status_bar));
+  
+  const time_t time_since_last_phone_msg = now - inbox_last_phone_msg_ts;
+  if ( time_since_last_phone_msg >= TKO ) {
+    status_bar_layer_set_colors(ui_status_bar, BNP, FNP);
+  }
 
   if (data_stops_curr.length == 0){
-    handle_error("NO DATA", "nothing to display");
+    handle_error(now, "NO DATA", "nothing to display");
     return;
   }
 
@@ -132,11 +137,10 @@ void clear() {
 
 }
 
-void handle_error ( const char* title , const char* message ) {
+void handle_error (const time_t now, const char* title , const char* message ) {
 
-  APP_LOG(APP_LOG_LEVEL_DEBUG, "handle_error: %s %s", title, message);
+  APP_LOG(APP_LOG_LEVEL_DEBUG, "handle_error: %ld %s %s", now, title, message);
 
-  const time_t now = time(NULL);
   const time_t time_since_last_loaded_event = now - inbox_last_loaded_event_ts;
   if ( time_since_last_loaded_event < TKO ) {
     status_bar_layer_set_colors(ui_status_bar, BOK, FOK);

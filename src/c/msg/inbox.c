@@ -19,7 +19,8 @@
 #define VAL_STATE_LOADED_ERROR 3
 #define VAL_STATE_RECV 4
 
-//time_t inbox_last_loaded_event_ts = 0;
+time_t inbox_last_loaded_event_ts = 0;
+time_t inbox_last_phone_msg_ts = 0;
 
 // used to keep track of last received message
 static uint32_t s_uuid_run;
@@ -29,6 +30,8 @@ void inbox_received_callback(DictionaryIterator *iterator, void *context) {
 
   int size = (int)iterator->end - (int)iterator->dictionary;
   APP_LOG(APP_LOG_LEVEL_DEBUG, "inbox_received_callback Received %d bytes", size);
+  
+  inbox_last_phone_msg_ts = time(NULL);
 
   const uint32_t type = dict_find(iterator, MESSAGE_KEY_TYPE)->value->uint32;
   switch (type) {

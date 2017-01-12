@@ -3,7 +3,7 @@
 #include "../data/realtime.h"
 
 // KO timeout
-#define TKO 60000
+#define TKO 60
 
 void draw(bool quiet);
 void draw_from_tm(bool quiet, struct tm *tick_time);
@@ -12,4 +12,4 @@ void draw_realtime_item(bool quiet, Layer* root, const time_t now, const size_t 
 
 void clear();
 
-void handle_error(const char* title , const char* message);
+void handle_error(const time_t now, const char* title , const char* message);
