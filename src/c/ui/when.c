@@ -23,10 +23,15 @@ GColor when (bool quiet, char* buffer, const time_t now, const time_t expected_a
 		strcpy(buffer, WHEN_GONE);
 		return GColorPurple ;
 	}
-	else if  ( seconds < 60 ) {
+	else if  ( seconds < 0 ) {
     if (!quiet) vibes_double_pulse();
 		strcpy(buffer, WHEN_NOW);
 		return GColorFolly ;
+	}
+	else if  ( seconds < 60 ) {
+    if (!quiet) vibes_double_pulse();
+		strcpy(buffer, WHEN_NOW);
+		return GColorDarkGray ;
 	}
 	else if  ( seconds >= 6000 ) {
 		strcpy(buffer, WHEN_IN_MORE_THAN_100_MINUTES);
