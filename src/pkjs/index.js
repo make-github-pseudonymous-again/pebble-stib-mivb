@@ -20,9 +20,9 @@ var VAL_STATE_LOADED_GEOERROR = 2 ;
 var VAL_STATE_LOADED_ERROR = 3 ;
 var VAL_STATE_RECV = 4 ;
 
-var POLLRATE = 30000 ;
-
-var TIMEOUT = null;
+var POLL_RATE = 30000;
+var POLL_TIMEOUT = 10000;
+var POLL_TIMER = null;
 
 var LOCK = lock.create();
 
@@ -42,7 +42,7 @@ var GEO = geo.create( function ( should_update ) {
   STATE.data.lat = GEO.lat ;
   STATE.data.lon = GEO.lon ;
   STATE.freeze();
-  if ( should_update || TIMEOUT === null ) load(null, true);
+  if ( should_update || POLL_TIMER === null ) load(null, true);
 });
 
 // REALTIME
@@ -57,6 +57,14 @@ function loadfail (req, cb) {
   return function (event) {
     console.log('loadfail');
     handle_error('[load]', 'failed to connect to service') ;
+    if ( cb ) cb() ;
+  } ;
+}
+
+function loadtimeout (req, cb) {
+  return function (event) {
+    console.log('loadtimeout');
+    handle_error('[load]', 'request timed out') ;
     if ( cb ) cb() ;
   } ;
 }
@@ -83,7 +91,7 @@ function loadsuccess (req, cb, geoerror, quiet) {
     send_state(VAL_STATE_RECV);
     send_realtime(quiet);
     send_state( geoerror ? VAL_STATE_LOADED_GEOERROR : VAL_STATE_LOADED);
-    TIMEOUT = setTimeout(load.bind(null, null, false), POLLRATE) ;
+    POLL_TIMER = setTimeout(load.bind(null, null, false), POLL_RATE) ;
     if ( cb ) cb() ;
   } ;
 }
@@ -96,9 +104,9 @@ function load ( cb, quiet ) {
 
 	console.log( 'load' ) ;
 
-	if ( TIMEOUT !== null ) {
-		clearTimeout(TIMEOUT);
-		TIMEOUT = null ;
+	if ( POLL_TIMER !== null ) {
+		clearTimeout(POLL_TIMER);
+		POLL_TIMER = null ;
 	}
 
 	send_state( VAL_STATE_LOADING );
@@ -110,10 +118,14 @@ function load ( cb, quiet ) {
 	// TODO timeout and abort long requests
 	// Create the request
 	var request = new XMLHttpRequest();
+  
+  // Configure timeout
+  request.timeout = POLL_TIMEOUT;
 
 	//request.addEventListener("progress", updateProgress);
 	request.addEventListener('load', loadsuccess( request, cb, GEO.error, quiet ));
 	request.addEventListener('error', loadfail( request, cb ));
+	request.addEventListener('timeout', loadtimeout( request, cb ));
 	//request.addEventListener("abort", transferCanceled);
 
 	// Send the request
