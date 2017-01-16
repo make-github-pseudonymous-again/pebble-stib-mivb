@@ -47,25 +47,25 @@ var GEO = geo.create( function ( should_update ) {
 
 // REALTIME
 
-function handle_error (title, message) {
+function handle_error (title, message, cb) {
   console.log('handle_error', title, message);
   LOCK.release();
   send_state(VAL_STATE_LOADED_ERROR);
+  POLL_TIMER = setTimeout(load.bind(null, null, false), POLL_RATE) ;
+  if ( cb ) cb() ;
 }
 
 function loadfail (req, cb) {
   return function (event) {
     console.log('loadfail');
-    handle_error('[load]', 'failed to connect to service') ;
-    if ( cb ) cb() ;
+    handle_error('[load]', 'failed to connect to service', cb) ;
   } ;
 }
 
 function loadtimeout (req, cb) {
   return function (event) {
     console.log('loadtimeout');
-    handle_error('[load]', 'request timed out') ;
-    if ( cb ) cb() ;
+    handle_error('[load]', 'request timed out', cb) ;
   } ;
 }
 
@@ -78,13 +78,11 @@ function loadsuccess (req, cb, geoerror, quiet) {
       response = JSON.parse(req.responseText);
     }
     catch(e){
-      handle_error('API failed ' + req.status , 'failed to parse JSON response');
-      if ( cb ) cb() ;
+      handle_error('API failed ' + req.status , 'failed to parse JSON response', cb);
       return;
     }
     if (response.error) {
-      handle_error('API error ' + req.status , '<'+response.error+'> ' + response.message ) ;
-      if ( cb ) cb() ;
+      handle_error('API error ' + req.status , '<'+response.error+'> ' + response.message, cb) ;
       return;
     }
     REALTIME = response;
@@ -112,7 +110,7 @@ function load ( cb, quiet ) {
 	send_state( VAL_STATE_LOADING );
 
 	if ( STATE.data.lat === undefined || STATE.data.lon === undefined  ) {
-		return handle_error('GEOERROR', GEO.error);
+		return handle_error('GEOERROR', GEO.error, cb);
 	}
 
 	// TODO timeout and abort long requests
@@ -132,7 +130,7 @@ function load ( cb, quiet ) {
 	var url = api.url(STATE.data.lat, STATE.data.lon);
 	request.open('GET', url);
 	request.setRequestHeader('Content-Type', 'application/json');
-	//request.responseType = 'json' ;
+	//request.responseType = 'json' ; // parsing manually is more flexible
   console.log('request', url);
 	request.send();
 }
